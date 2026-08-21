@@ -155,6 +155,30 @@ def rating_words(entry):
     return str(entry) if entry is not None else ""
 
 
+def price_words(seats):
+    """'from Rs 400' for a verified show, from its matched tier or the
+    cheapest hall tier; empty when unverified (csessions carries no
+    prices, so nothing is guessed)."""
+    if not seats:
+        return ""
+    tier = seats.get("tier") or {}
+    if tier.get("mode") in ("rows", "whole_hall") and tier.get("gross"):
+        candidates = [tier["gross"]]
+    else:
+        candidates = [t.get("price") for t in seats.get("price_tiers") or []]
+    values = []
+    for text in candidates:
+        try:
+            values.append(float(text))
+        except (TypeError, ValueError):
+            continue
+    if not values:
+        return ""
+    low = min(values)
+    text = ("%d" % low) if low == int(low) else ("%.2f" % low)
+    return "from Rs %s" % text
+
+
 def fallback_table(radar, ratings=None):
     """Always-rendered static table: the full answer without JS, CDN, or
     tiles (SPEC R75). One row per ranked show."""
@@ -162,9 +186,12 @@ def fallback_table(radar, ratings=None):
     party = (radar.get("query") or {}).get("party_size") or 1
     ratings = {str(k).strip().lower(): v for k, v in (ratings or {}).items()}
     rating_col = ("<th>Rating</th>" if ratings else "")
+    has_price = any(price_words(s.get("seats"))
+                    for s in radar.get("shows") or [])
+    price_col = ("<th>Price</th>" if has_price else "")
     head = ("<tr><th>Venue</th><th>Distance</th><th>Drive est.</th>"
             "<th>Show</th>%s<th>Format</th><th>Status</th><th>Seats</th>"
-            "<th>Link</th></tr>" % rating_col)
+            "%s<th>Link</th></tr>" % (rating_col, price_col))
     rows = [head]
     for show in radar.get("shows") or []:
         venue = venues.get(show.get("theatreId")) or {}
@@ -188,12 +215,23 @@ def fallback_table(radar, ratings=None):
                       else esc(seats_text))
         rating_cell = ""
         if ratings:
-            entry = ratings.get(str(show.get("film") or "").strip().lower())
+            film = str(show.get("film") or "").strip().lower()
+            entry = ratings.get(film)
+            if entry is None:
+                # Prints vary ("X (HINDI)", "X (HINDI ATMOS)"): a rating
+                # keyed on the base title covers them all.
+                for key, value in ratings.items():
+                    if key and key in film:
+                        entry = value
+                        break
             rating_cell = '<td class="num">%s</td>' % esc(rating_words(entry))
+        price_cell = ('<td class="num">%s</td>'
+                      % esc(price_words(show.get("seats")))
+                      if has_price else "")
         rows.append(
             '<tr><td class="c-venue">%s</td><td class="num">%s</td>'
             '<td class="num">%s</td><td>%s</td>%s<td class="c-fmt">%s</td>'
-            '<td><span class="dot %s"></span>%s</td><td>%s</td>'
+            '<td><span class="dot %s"></span>%s</td><td>%s</td>%s'
             '<td class="c-link">%s</td></tr>' % (
                 esc(venue.get("name") or show.get("theatreId")),
                 esc("%.1f km" % km) if km is not None else "",
@@ -206,6 +244,7 @@ def fallback_table(radar, ratings=None):
                 status_dot(show),
                 esc(status_cell(show)),
                 seats_html,
+                price_cell,
                 link_cell))
     if len(rows) == 1:
         # Empty state keeps the per-venue open/closed distinction the pins

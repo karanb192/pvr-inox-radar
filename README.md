@@ -8,6 +8,8 @@ A Claude Code / Codex / Gemini skill. Read-only and personal-use: it never books
 
 - "Dune in IMAX Saturday night, 4 seats together, under 30 minutes from Sector 56 Gurgaon"
 - "What recliners are available nearby tonight?"
+- "Cheapest recliners for Awarapan 2 near me this weekend"
+- "Anything decent under Rs 300 tomorrow evening?"
 - "Which show tomorrow evening has 2 recliners free, and what's rated best?"
 - "What's playing in 4DX in Bengaluru this weekend?"
 - "Hindi shows after 8pm tonight near Indiranagar, 2 seats together"

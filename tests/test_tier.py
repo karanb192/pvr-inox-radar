@@ -173,5 +173,81 @@ class TestTierCli(unittest.TestCase):
         self.assertEqual(self.doc["query"]["tier"], "recliner")
 
 
+
+
+class TestPriceQueries(unittest.TestCase):
+    RECLINER_SEATS = {"tier": {"mode": "rows", "matched": ["RECLINER ROWS"],
+                               "gross": "400.00"},
+                      "price_tiers": [{"price": "250.00"}, {"price": "400.00"}]}
+    PLAIN_SEATS = {"tier": None,
+                   "price_tiers": [{"price": "510.00"}, {"price": "199.00"}]}
+
+    def test_price_from_prefers_matched_tier(self):
+        import radar
+        self.assertEqual(radar.price_from(self.RECLINER_SEATS), 400.0)
+
+    def test_price_from_cheapest_hall_tier_otherwise(self):
+        import radar
+        self.assertEqual(radar.price_from(self.PLAIN_SEATS), 199.0)
+        self.assertIsNone(radar.price_from(None))
+        self.assertIsNone(radar.price_from({"price_tiers": []}))
+
+    def test_price_words(self):
+        self.assertEqual(render_map.price_words(self.RECLINER_SEATS),
+                         "from Rs 400")
+        self.assertEqual(render_map.price_words(self.PLAIN_SEATS),
+                         "from Rs 199")
+        self.assertEqual(render_map.price_words(None), "")
+
+    def test_price_column_conditional(self):
+        radar_doc = {"query": {"party_size": 1, "origin": {}},
+                     "venues": [{"theatreId": "1", "name": "V", "lat": 1,
+                                 "lng": 1}],
+                     "shows": [{"theatreId": "1", "film": "X",
+                                "showTime": "06:05 PM", "sessionId": "9",
+                                "seats": dict(self.PLAIN_SEATS, free=5,
+                                              sold=1, held=0, zone_free=5,
+                                              zone_rows_used=[], best_run=5,
+                                              best_where="", widened_to=[],
+                                              hall_free=5, hall_best_run=5,
+                                              meets_party_size=True,
+                                              hall_meets_party_size=True,
+                                              premium=False, verified=True)}],
+                     "meta": {}}
+        page = render_map.render(radar_doc)
+        self.assertIn("<th>Price</th>", page)
+        self.assertIn("from Rs 199", page)
+        radar_doc["shows"][0].pop("seats")
+        self.assertNotIn("<th>Price</th>", render_map.render(radar_doc))
+
+
+class TestPriceCli(unittest.TestCase):
+    """Offline: --max-price 1 excludes every verified show (real fixture
+    prices start above Rs 1) and surfaces the count; --sort cheapest is
+    accepted and echoes."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.proc = subprocess.run(
+            [sys.executable,
+             os.path.join(context.SCRIPTS_DIR, "radar.py"),
+             "--city", "Gurugram", "--date", "2026-08-22",
+             "--time-from", "16:00", "--time-to", "18:30",
+             "--max-price", "1", "--sort", "cheapest", "--seat-detail", "8",
+             "--fixtures", context.FIXTURES_DIR, "--no-osrm"],
+            capture_output=True, text=True)
+        cls.doc = json.loads(cls.proc.stdout or "{}")
+
+    def test_priced_shows_excluded_and_counted(self):
+        self.assertEqual(self.proc.returncode, 0, self.proc.stderr)
+        self.assertGreaterEqual(self.doc["meta"]["excluded_by_price"], 1)
+        for show in self.doc["shows"]:
+            self.assertIsNone(__import__("radar").price_from(show.get("seats")))
+
+    def test_query_echo_carries_price_and_sort(self):
+        self.assertEqual(self.doc["query"]["max_price"], 1)
+        self.assertEqual(self.doc["query"]["sort"], "cheapest")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -326,6 +326,29 @@ def verified_meets(show):
                            or seats.get("hall_meets_party_size")))
 
 
+def price_from(seats):
+    """Cheapest verified per-ticket gross for a show, or None.
+
+    Tier-matched shows price at their tier; otherwise the cheapest tier in
+    the hall. Prices exist only inside seat layouts (csessions carries
+    none), so unverified shows have no price and never pretend to."""
+    if not seats:
+        return None
+    tier = seats.get("tier") or {}
+    candidates = []
+    if tier.get("mode") in ("rows", "whole_hall") and tier.get("gross"):
+        candidates = [tier["gross"]]
+    else:
+        candidates = [t.get("price") for t in seats.get("price_tiers") or []]
+    values = []
+    for text in candidates:
+        try:
+            values.append(float(text))
+        except (TypeError, ValueError):
+            continue
+    return min(values) if values else None
+
+
 def seats_from_report(report):
     """The seats block a show carries in the radar document (SPEC R60)."""
     return {
@@ -580,11 +603,30 @@ def solve(client, query, use_osrm=False, osrm_urlopen=urllib.request.urlopen,
     if query.get("tier"):
         shows = [s for s in shows if not s.get("tier_absent")]
 
+    excluded_by_price = 0
+    if query.get("max_price") is not None:
+        kept = []
+        for show in shows:
+            price = price_from(show.get("seats"))
+            if price is not None and price > query["max_price"]:
+                excluded_by_price += 1
+            else:
+                kept.append(show)
+        shows = kept
+
     shows, excluded_by_party = apply_party_filter(shows, query["party_size"])
 
     # Verified-beats-unverified tiebreak: at equal relevance a show with
     # verified seats for the party never ranks below an unverified one.
-    shows.sort(key=lambda s: relevance_key(s) + ((0 if verified_meets(s) else 1),))
+    if query.get("sort") == "cheapest":
+        # Priced (verified) shows first, ascending; unverified keep their
+        # relevance order after them, honestly unpriced.
+        shows.sort(key=lambda s: (
+            (0, price_from(s.get("seats"))) if price_from(s.get("seats"))
+            is not None else (1,) + tuple(relevance_key(s))))
+    else:
+        shows.sort(key=lambda s: relevance_key(s)
+                   + ((0 if verified_meets(s) else 1),))
     shows = shows[:query["limit"]]
     for position, show in enumerate(shows):
         show["rank"] = position + 1
@@ -626,6 +668,7 @@ def solve(client, query, use_osrm=False, osrm_urlopen=urllib.request.urlopen,
             "error": error,
             "excluded_by_party": excluded_by_party,
             "excluded_by_tier": excluded_by_tier,
+            "excluded_by_price": excluded_by_price,
             "date_mismatch": date_mismatch,
             "relaxations_applied": [],
             "caveats": [pvr_client.WITHHELD_CAVEAT, LABELS_LIE_CAVEAT,
@@ -641,6 +684,8 @@ def query_echo(query):
         "movie": query["movie"],
         "format": query["format"],
         "tier": query.get("tier") or "",
+        "max_price": query.get("max_price"),
+        "sort": query.get("sort") or "relevance",
         "date": query["date"],
         "time_from": query["time_from"],
         "time_to": query["time_to"],
@@ -683,6 +728,14 @@ def build_parser():
                         help="seat tier word, e.g. recliner: count seats only "
                              "in matching priced rows (RECLINER ROWS), or "
                              "whole premium halls (Director's Cut, INSIGNIA)")
+    parser.add_argument("--max-price", type=float, default=None,
+                        help="drop verified shows whose cheapest matching "
+                             "ticket (gross Rs) exceeds this; prices exist "
+                             "only in seat maps, so unverified shows stay")
+    parser.add_argument("--sort", choices=["relevance", "cheapest"],
+                        default="relevance",
+                        help="cheapest: priced verified shows first, "
+                             "ascending by their per-ticket gross")
     parser.add_argument("--format", default="",
                         help="IMAX, 4DX, ATMOS, LASER, PLAYHOUSE, ...")
     parser.add_argument("--date", default="",
@@ -787,6 +840,8 @@ def build_query(args, client):
         "limit": max(1, args.limit),
         "seat_detail": seat_detail,
         "tier": (args.tier or "").strip(),
+        "max_price": args.max_price,
+        "sort": args.sort,
         "no_osrm": bool(args.no_osrm),
         "fixtures": args.fixtures or None,
         "origin": origin,

@@ -54,6 +54,12 @@ Extract from the user's ask:
   a mixed hall's recliners are invisible until its seat map is opened, and
   the map honestly drops verified halls that have no such tier
   (meta.excluded_by_tier says how many).
+- **Price**: "under Rs 500" means --max-price 500; "cheapest" means
+  --sort cheapest. Prices live ONLY inside seat maps (show listings carry
+  none), so pass --seat-detail 8 for price asks and say that unverified
+  shows carry no price rather than a guessed one. The map's Price column
+  shows "from Rs N": the matched tier's per-ticket gross, or the hall's
+  cheapest tier (convenience fee and GST are extra at checkout).
 - **Origin**: a locality ("Sector 56 Gurgaon") or a bare city ("Gurugram").
 - **City**: usually implied by the locality. If genuinely ambiguous, restate
   the task in one line and ask ONE question instead of guessing.

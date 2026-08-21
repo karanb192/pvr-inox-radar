@@ -45,6 +45,9 @@ Extract from the user's ask:
   IST ("Saturday" means the coming Saturday in IST, not local time).
 - **Time window**: evening = 18:00 to 23:59, night = 20:00 onward,
   matinee = before 17:00. Pass as --time-from / --time-to (24h IST).
+  Relative asks ("starting in the next 30 to 90 minutes", "something we
+  can leave for now") are computed from `date` in IST: now+30min to
+  now+90min, rounded to minutes.
 - **Party size**: "4 seats together" means --party-size 4.
 - **Seat tier**: "recliners", "recliner seats", "loungers" means
   --tier recliner (or the asked word). This counts seats only inside
@@ -117,11 +120,19 @@ Open map.html in the user's browser. Also give a compact ranked summary in
 chat (top 3 to 5 shows: venue, time, format, seats-together verdict, drive
 estimate, deep link) so the answer survives without the map.
 
-**Ratings (optional, when the user wants them or is choosing between
-films):** the scripts never fetch ratings and need no API key; YOU look
-them up. After the radar run, take the distinct film titles from
-radar.json, look up each rating with your own web search (IMDb rating
-preferred; say the source you actually found), then render with them:
+Name the output per query so maps do not clobber each other:
+map-<movie-or-all>-<date>.html (e.g. map-awarapan-2026-08-21.html). One
+HTML answers one QUERY: an all-films ask is one map holding every film;
+a movie ask is one map for that film.
+
+**Ratings (fetch by DEFAULT for any ask that names a film, and for the
+top 3 to 5 films of an all-films ask; skip only if the user says skip):**
+the scripts never fetch ratings and need no API key; YOU look them up.
+After the radar run, take the distinct film titles from radar.json, look
+up each rating with your own web search (IMDb preferred; say the source
+you actually found; third-party mirrors misreport, prefer imdb.com
+itself), then render with them; rated films appear as a strip under the
+stats and as a table column:
 
     python3 scripts/render_map.py --in radar.json --out map.html \
       --ratings '{"AWARAPAN 2 (HINDI)": {"rating": "7.2", "source": "IMDb"}}'

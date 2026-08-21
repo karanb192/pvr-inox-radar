@@ -249,5 +249,25 @@ class TestPriceCli(unittest.TestCase):
         self.assertEqual(self.doc["query"]["sort"], "cheapest")
 
 
+
+
+class TestFilmsStrip(unittest.TestCase):
+    RADAR = TestRatingsColumn.RADAR
+
+    def test_strip_shows_rated_film(self):
+        page = render_map.render(self.RADAR, ratings={
+            "Awarapan 2": {"rating": "6.9", "source": "IMDb"}})
+        self.assertIn('<section class="films">', page)
+        self.assertIn("Awarapan 2", page)
+        self.assertIn("6.9 (IMDb)", page)
+
+    def test_no_strip_without_ratings_or_match(self):
+        self.assertNotIn('<section class="films">',
+                         render_map.render(self.RADAR))
+        page = render_map.render(self.RADAR, ratings={
+            "Some Other Film": {"rating": "9", "source": "IMDb"}})
+        self.assertNotIn('<section class="films">', page)
+
+
 if __name__ == "__main__":
     unittest.main()

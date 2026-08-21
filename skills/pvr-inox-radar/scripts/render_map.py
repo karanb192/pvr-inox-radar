@@ -10,9 +10,10 @@ Usage:
     ... radar.py ... | python3 scripts/render_map.py --in - --out map.html
 
 The output embeds the radar JSON inline and performs zero fetches at view
-time except: Leaflet 1.9.4 from unpkg (SRI-pinned) and OpenStreetMap raster
-tiles. A plain semantic HTML table under the map always carries the full
-answer, so the page still works with no JS, no CDN, or no tiles.
+time except: Leaflet 1.9.4 from unpkg (SRI-pinned) and basemap tiles
+(CARTO Positron, falling back to OpenStreetMap on tile error). A plain
+semantic HTML table under the map always carries the full answer, so the
+page still works with no JS, no CDN, or no tiles.
 """
 
 import argparse
@@ -177,6 +178,34 @@ def price_words(seats):
     low = min(values)
     text = ("%d" % low) if low == int(low) else ("%.2f" % low)
     return "from Rs %s" % text
+
+
+def films_strip(radar, ratings=None):
+    """A visible strip of rated films under the stats, so ratings never
+    live only in the table. One chip per rating key that matched a film
+    actually on the page."""
+    if not ratings:
+        return ""
+    films = []
+    for show in radar.get("shows") or []:
+        name = str(show.get("film") or "").strip().lower()
+        if name and name not in films:
+            films.append(name)
+    chips = []
+    seen = set()
+    for key, entry in ratings.items():
+        low = str(key).strip().lower()
+        if low in seen:
+            continue
+        if any(low == f or low in f for f in films):
+            seen.add(low)
+            words = rating_words(entry)
+            if words:
+                chips.append('<span class="film-chip">%s<b>%s</b></span>'
+                             % (esc(key), esc(words)))
+    if not chips:
+        return ""
+    return '<section class="films">%s</section>' % "".join(chips)
 
 
 def fallback_table(radar, ratings=None):
@@ -348,6 +377,12 @@ header .stamp { color: var(--sub); font-size: 12.5px; margin-top: 8px; }
           font-variant-numeric: tabular-nums; }
 .stat-l { font-size: 10.5px; letter-spacing: 0.14em; text-transform:
           uppercase; color: var(--sub); margin-top: 1px; }
+.films { padding: 10px 26px 0; }
+.film-chip { display: inline-block; background: var(--card);
+             border: 1px solid var(--line); border-radius: 999px;
+             padding: 4px 14px; margin: 2px 8px 2px 0; font-size: 13px; }
+.film-chip b { font-weight: 650; color: var(--ok); margin-left: 8px;
+               font-variant-numeric: tabular-nums; }
 .notice { background: #fbf3dd; border: 1px solid #eaddb4; color: #6d5716;
           padding: 10px 14px; margin: 14px 26px 0; border-radius: 10px;
           font-size: 13.5px; }
@@ -503,11 +538,29 @@ SCRIPT = """
   }
 
   var map = L.map("map", { scrollWheelZoom: false });
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
-      + "OpenStreetMap</a> contributors"
-  }).addTo(map);
+  // CARTO Positron: muted retina cartography that lets the pins carry the
+  // color. On any tile error, fall back once to standard OSM tiles.
+  function osmLayer() {
+    return L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
+        + "OpenStreetMap</a> contributors"
+    });
+  }
+  var base = L.tileLayer(
+    "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 20,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
+        + 'OpenStreetMap</a> contributors &copy; '
+        + '<a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(map);
+  var fellBack = false;
+  base.on("tileerror", function () {
+    if (fellBack) { return; }
+    fellBack = true;
+    map.removeLayer(base);
+    osmLayer().addTo(map);
+  });
 
   // Short on-map name: drop the city suffix and any "City: " prefix so the
   // label is readable at a glance; the popup keeps the full name.
@@ -525,8 +578,8 @@ SCRIPT = """
   if (origin.lat != null && origin.lng != null) {
     var here = [Number(origin.lat), Number(origin.lng)];
     points.push(here);
-    L.circleMarker(here, { radius: 8, color: "%(origin)s", weight: 3,
-                           fillColor: "#9db8dd", fillOpacity: 0.9 })
+    L.circleMarker(here, { radius: 8, color: "#ffffff", weight: 2.5,
+                           fillColor: "%(origin)s", fillOpacity: 1 })
       .addTo(map)
       .bindTooltip("You: " + escapeHtml(origin.label || "your location"),
                    { permanent: true, direction: "bottom", offset: [0, 8],
@@ -555,9 +608,10 @@ SCRIPT = """
     // labels on the same pixel.
     var side = index %% 2 === 0 ? "right" : "left";
     L.circleMarker(at, {
-      radius: 9, color: color, weight: hollow ? 2 : 1.5,
+      radius: 9, color: hollow ? color : "#ffffff",
+      weight: hollow ? 2 : 2.5,
       dashArray: hollow ? "3 3" : null,
-      fillColor: color, fillOpacity: hollow ? 0 : 0.85
+      fillColor: color, fillOpacity: hollow ? 0 : 1
     }).addTo(map)
       .bindTooltip(escapeHtml(label),
                    { permanent: true, direction: side,
@@ -651,6 +705,7 @@ def render(radar, ratings=None):
         '<div class="stamp">generated %s IST</div>' % esc(generated),
         "</header>",
         stats_strip(radar),
+        films_strip(radar, ratings),
         notice_banner(radar),
         '<div id="map"></div>',
         legend,

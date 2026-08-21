@@ -14,11 +14,13 @@ import context  # noqa: E402
 import render_map  # noqa: E402
 
 ALLOWED_HOSTS = {
-    "unpkg.com",                 # Leaflet 1.9.4, SRI-pinned
-    "tile.openstreetmap.org",    # map tiles
-    "www.openstreetmap.org",     # attribution link
+    "unpkg.com",                     # Leaflet 1.9.4, SRI-pinned
+    "basemaps.cartocdn.com",         # CARTO Positron basemap (primary)
+    "carto.com",                     # attribution link
+    "tile.openstreetmap.org",        # OSM tiles (fallback layer)
+    "www.openstreetmap.org",         # attribution link
     "openstreetmap.org",
-    "www.pvrcinemas.com",        # per-show deep links
+    "www.pvrcinemas.com",            # per-show deep links
 }
 
 

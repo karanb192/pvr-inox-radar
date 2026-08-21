@@ -46,6 +46,14 @@ Extract from the user's ask:
 - **Time window**: evening = 18:00 to 23:59, night = 20:00 onward,
   matinee = before 17:00. Pass as --time-from / --time-to (24h IST).
 - **Party size**: "4 seats together" means --party-size 4.
+- **Seat tier**: "recliners", "recliner seats", "loungers" means
+  --tier recliner (or the asked word). This counts seats only inside
+  matching priced rows (mixed halls name them, e.g. RECLINER ROWS) and
+  counts whole halls only for recliner-native houses (Director's Cut,
+  INSIGNIA, LUXE, Gold). For tier asks also pass --seat-detail 6 or more:
+  a mixed hall's recliners are invisible until its seat map is opened, and
+  the map honestly drops verified halls that have no such tier
+  (meta.excluded_by_tier says how many).
 - **Origin**: a locality ("Sector 56 Gurgaon") or a bare city ("Gurugram").
 - **City**: usually implied by the locality. If genuinely ambiguous, restate
   the task in one line and ask ONE question instead of guessing.
@@ -97,6 +105,19 @@ Flag guidance:
 Open map.html in the user's browser. Also give a compact ranked summary in
 chat (top 3 to 5 shows: venue, time, format, seats-together verdict, drive
 estimate, deep link) so the answer survives without the map.
+
+**Ratings (optional, when the user wants them or is choosing between
+films):** the scripts never fetch ratings and need no API key; YOU look
+them up. After the radar run, take the distinct film titles from
+radar.json, look up each rating with your own web search (IMDb rating
+preferred; say the source you actually found), then render with them:
+
+    python3 scripts/render_map.py --in radar.json --out map.html \
+      --ratings '{"AWARAPAN 2 (HINDI)": {"rating": "7.2", "source": "IMDb"}}'
+
+Keys match film names case-insensitively. Tell the user ratings were
+looked up by you at ask time and are approximate; never invent one, and
+skip the flag entirely for films you could not verify.
 
 ## Present honestly
 

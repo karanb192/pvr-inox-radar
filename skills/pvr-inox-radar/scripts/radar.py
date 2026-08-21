@@ -112,12 +112,13 @@ class LiveClient:
     def sessions(self, city, cid, date, lat, lng, variants):
         return pvr_client.day_sessions(city, cid, date, lat, lng, variants)
 
-    def seats(self, show, party_size):
+    def seats(self, show, party_size, tier=None):
         return pvr_client.seat_report(
             show["encrypted"], party_size,
             screen_type=show.get("screenType") or "",
             theatre_id=show.get("theatreId"),
-            screen_name=show.get("screenName"))
+            screen_name=show.get("screenName"),
+            tier=tier)
 
 
 class FixtureClient:
@@ -182,7 +183,7 @@ class FixtureClient:
         return {"outcome": "open",
                 "shows": pvr_client.extract_shows(payload.get("output") or {}, variants)}
 
-    def seats(self, show, party_size):
+    def seats(self, show, party_size, tier=None):
         payload = self._load("seatlayout_%s.json" % show.get("sessionId"))
         if payload is None:
             return {"outcome": "error",
@@ -191,7 +192,7 @@ class FixtureClient:
             return {"outcome": "error", "error": "seatmap unavailable"}
         report = pvr_client.seat_report_from_payload(
             payload["output"], party_size,
-            screen_type=show.get("screenType") or "")
+            screen_type=show.get("screenType") or "", tier=tier)
         return {"outcome": "ok", "report": report}
 
 
@@ -342,6 +343,8 @@ def seats_from_report(report):
         "hall_meets_party_size": report["hall_meets_party_size"],
         "premium": report["premium"],
         "price_tiers": report["price_tiers"],
+        "tier": report.get("tier"),
+        "tiers_available": report.get("tiers_available") or [],
         "verified": True,
     }
 
@@ -542,6 +545,7 @@ def solve(client, query, use_osrm=False, osrm_urlopen=urllib.request.urlopen,
     # consuming budget; sold-out shows are allowed, restocks appear there).
     seat_budget = query["seat_detail"]
     fetched = 0
+    excluded_by_tier = 0
     if not partial:
         for show in shows:
             if fetched >= seat_budget:
@@ -550,7 +554,8 @@ def solve(client, query, use_osrm=False, osrm_urlopen=urllib.request.urlopen,
                 continue
             log("radar: seat map for session %s" % show.get("sessionId"))
             try:
-                outcome = client.seats(show, query["party_size"])
+                outcome = client.seats(show, query["party_size"],
+                                       tier=query.get("tier") or None)
             except Blocked:
                 partial, error = True, "UPSTREAM_BLOCKED"
                 break
@@ -559,9 +564,21 @@ def solve(client, query, use_osrm=False, osrm_urlopen=urllib.request.urlopen,
                 break
             fetched += 1
             if outcome["outcome"] == "ok":
-                show["seats"] = seats_from_report(outcome["report"])
+                report = outcome["report"]
+                # A tier ask excludes verified halls that simply have no such
+                # tier; unverified shows stay, honestly unverified (a mixed
+                # hall we did not open may still hold recliners).
+                if query.get("tier") and \
+                        (report.get("tier") or {}).get("mode") == "absent":
+                    show["tier_absent"] = True
+                    excluded_by_tier += 1
+                else:
+                    show["seats"] = seats_from_report(report)
             else:
                 show["seat_error"] = outcome["error"]
+
+    if query.get("tier"):
+        shows = [s for s in shows if not s.get("tier_absent")]
 
     shows, excluded_by_party = apply_party_filter(shows, query["party_size"])
 
@@ -608,6 +625,7 @@ def solve(client, query, use_osrm=False, osrm_urlopen=urllib.request.urlopen,
             "message": message,
             "error": error,
             "excluded_by_party": excluded_by_party,
+            "excluded_by_tier": excluded_by_tier,
             "date_mismatch": date_mismatch,
             "relaxations_applied": [],
             "caveats": [pvr_client.WITHHELD_CAVEAT, LABELS_LIE_CAVEAT,
@@ -622,6 +640,7 @@ def query_echo(query):
         "city": query["city"],
         "movie": query["movie"],
         "format": query["format"],
+        "tier": query.get("tier") or "",
         "date": query["date"],
         "time_from": query["time_from"],
         "time_to": query["time_to"],
@@ -660,6 +679,10 @@ def build_parser():
                         help="where --lat/--lng came from (for honest labeling)")
     parser.add_argument("--movie", default="",
                         help="film name substring or canonical film id")
+    parser.add_argument("--tier", default="",
+                        help="seat tier word, e.g. recliner: count seats only "
+                             "in matching priced rows (RECLINER ROWS), or "
+                             "whole premium halls (Director's Cut, INSIGNIA)")
     parser.add_argument("--format", default="",
                         help="IMAX, 4DX, ATMOS, LASER, PLAYHOUSE, ...")
     parser.add_argument("--date", default="",
@@ -763,6 +786,7 @@ def build_query(args, client):
         "max_km": max_km,
         "limit": max(1, args.limit),
         "seat_detail": seat_detail,
+        "tier": (args.tier or "").strip(),
         "no_osrm": bool(args.no_osrm),
         "fixtures": args.fixtures or None,
         "origin": origin,

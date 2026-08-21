@@ -7,9 +7,13 @@ A Claude Code / Codex / Gemini skill. Read-only and personal-use: it never books
 ## Good queries
 
 - "Dune in IMAX Saturday night, 4 seats together, under 30 minutes from Sector 56 Gurgaon"
+- "What recliners are available nearby tonight?"
+- "Which show tomorrow evening has 2 recliners free, and what's rated best?"
 - "What's playing in 4DX in Bengaluru this weekend?"
 - "Hindi shows after 8pm tonight near Indiranagar, 2 seats together"
 - "Is the Friday IMAX at Ambience Mall filling up? We are 6 people"
+
+Recliner asks work at two levels: mixed halls price them as named rows (a real capture: "RECLINER ROWS (400.00)" beside CLASSIC and PRIME), and recliner-native houses (Director's Cut, INSIGNIA) count whole. The seats verdict then applies to recliners only, with the price shown. Ratings are looked up by your agent at ask time (no API key, source labeled) and appear as a column on the map's table.
 
 The skill parses the ask, geocodes the locality if there is one (Nominatim, cached), sweeps the city's venues for that date, verifies seats-together on the top few shows from the live seat map, and renders the map.
 

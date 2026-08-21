@@ -99,7 +99,7 @@ class StubClient:
             raise outcome
         return outcome
 
-    def seats(self, show, party_size):
+    def seats(self, show, party_size, tier=None):
         self.calls += 1
         self.seat_calls.append(show["sessionId"])
         outcome = self.seats_by_session.get(show["sessionId"])

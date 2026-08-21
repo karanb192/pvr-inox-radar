@@ -366,6 +366,32 @@ def is_premium_format(value):
     return any(fmt in norm for fmt in PREMIUM_FORMATS)
 
 
+# Whole-hall premium houses whose every seat IS the asked-for tier when the
+# hall carries no area headers at all (measured: DIRECTOR'S CUT halls answer
+# with zero tier rows). Keys are normalized tier words.
+TIER_WHOLE_HALL = {
+    "RECLINER": ("DIRECTOR'S CUT", "INSIGNIA", "LUXE", "GOLD"),
+    "LOUNGER": ("DIRECTOR'S CUT", "INSIGNIA", "LUXE", "GOLD"),
+}
+
+
+def tier_word(value):
+    """Normalize a tier ask ('Recliners', 'recliner') to one match word."""
+    word = str(value or "").strip().upper()
+    if word.endswith("S") and len(word) > 3:
+        word = word[:-1]
+    return word
+
+
+def split_tier_label(name):
+    """Pure: \"RECLINER ROWS (400.00)\" to (\"RECLINER ROWS\", \"400.00\")."""
+    text = str(name or "").strip()
+    if text.endswith(")") and " (" in text:
+        head, price = text.rsplit(" (", 1)
+        return head.strip(), price[:-1]
+    return text, ""
+
+
 def deep_link(encrypted):
     """Per-show deep link into PVR's own purchase flow (SPEC R33)."""
     return SEAT_PAGE + encrypted if encrypted else None
@@ -1176,7 +1202,7 @@ def geometry_from_rows(rows):
 
 
 def seat_report_from_payload(output, party_size=1, zone_rows=None,
-                             zone_seats=None, screen_type=""):
+                             zone_seats=None, screen_type="", tier=None):
     """Pure: full seats-together report from one seatlayout payload output.
 
     best_run is the longest contiguous run of free seats inside the zone;
@@ -1187,6 +1213,11 @@ def seat_report_from_payload(output, party_size=1, zone_rows=None,
     verdict and the whole-hall verdict are reported separately instead of
     silently reframing a sold-out premium block (SPEC R41).
 
+    tier (e.g. "recliner"): restrict counting to seat rows under a matching
+    area header. A hall with NO headers counts whole only when its screen
+    type names a matching premium house (TIER_WHOLE_HALL); otherwise the
+    report carries tier.mode == "absent" and the caller excludes the show.
+
     Display context uses showDateTime (already an IST display string). The
     payload's showTime/endTime are UTC despite carrying no timezone marker
     and are never read (SPEC R43).
@@ -1196,6 +1227,42 @@ def seat_report_from_payload(output, party_size=1, zone_rows=None,
     premium = is_premium_format(screen_type) or is_premium_format(
         (output or {}).get("experience"))
     derived = not zone_rows and not zone_seats
+
+    tiers_available = []
+    seen_tiers = set()
+    for row in rows:
+        label, gross = split_tier_label(row["tier"])
+        if label and label not in seen_tiers:
+            seen_tiers.add(label)
+            tiers_available.append({"name": label, "gross": gross,
+                                    "net": row["tier_net"]})
+
+    tier_info = None
+    if tier:
+        word = tier_word(tier)
+        matched = [row for row in rows if word in row["tier"].upper()]
+        hall_types = "%s %s" % (screen_type_norm(screen_type),
+                                screen_type_norm((output or {}).get("experience")))
+        if matched:
+            labels, grosses = [], []
+            for row in matched:
+                label, gross = split_tier_label(row["tier"])
+                if label not in labels:
+                    labels.append(label)
+                    grosses.append(gross)
+            tier_info = {"requested": word, "mode": "rows",
+                         "matched": labels, "gross": grosses[0],
+                         "net": matched[0]["tier_net"]}
+            rows = matched
+        elif not seen_tiers and any(fmt in hall_types
+                                    for fmt in TIER_WHOLE_HALL.get(word, ())):
+            tier_info = {"requested": word, "mode": "whole_hall",
+                         "matched": [screen_type_norm(screen_type) or
+                                     screen_type_norm((output or {}).get("experience"))],
+                         "gross": "", "net": ""}
+        else:
+            tier_info = {"requested": word, "mode": "absent",
+                         "available": [t["name"] for t in tiers_available]}
 
     zone = derive_zone(rows, zone_rows, zone_seats)
     scored = score_zone(rows, zone)
@@ -1231,6 +1298,8 @@ def seat_report_from_payload(output, party_size=1, zone_rows=None,
         "hall_best_where": hall_where,
         "hall_meets_party_size": hall_run >= need,
         "price_tiers": price_tiers((output or {}).get("priceList")),
+        "tier": tier_info,
+        "tiers_available": tiers_available,
         "verified": True,
         "caveats": [WITHHELD_CAVEAT],
     }
@@ -1258,7 +1327,7 @@ def seat_layout(encrypted, city=DEFAULT_CITY):
 
 
 def seat_report(encrypted, party_size=1, zone_rows=None, zone_seats=None,
-                screen_type="", theatre_id=None, screen_name=None):
+                screen_type="", theatre_id=None, screen_name=None, tier=None):
     """One live call: fetch a show's seat map and score it.
 
     Returns {"outcome": "ok", "report": {...}} or
@@ -1280,7 +1349,7 @@ def seat_report(encrypted, party_size=1, zone_rows=None, zone_seats=None,
 
     output = payload["output"]
     report = seat_report_from_payload(
-        output, party_size, zone_rows, zone_seats, screen_type)
+        output, party_size, zone_rows, zone_seats, screen_type, tier=tier)
     if theatre_id and screen_name:
         remember_geometry(theatre_id, screen_name,
                           parse_seat_rows(output.get("rows")))

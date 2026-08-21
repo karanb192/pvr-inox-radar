@@ -67,6 +67,8 @@ def query_words(query):
     parts = [query.get("movie") or "All films"]
     if query.get("format"):
         parts.append(str(query["format"]))
+    if query.get("tier"):
+        parts.append("%s seats" % str(query["tier"]).lower())
     if query.get("date"):
         parts.append(date_words(query["date"]))
     time_from, time_to = query.get("time_from"), query.get("time_to")
@@ -87,6 +89,22 @@ def query_words(query):
     elif label:
         parts.append("near %s" % label)
     return ", ".join(parts)
+
+
+def tier_prefix(seats):
+    """'recliner (Rs 400): ' when the counted seats sit in an asked-for tier;
+    empty otherwise. Whole-hall premium matches carry the house name."""
+    tier = (seats or {}).get("tier") or {}
+    mode = tier.get("mode")
+    if mode == "rows":
+        gross = tier.get("gross")
+        label = (tier.get("matched") or [tier.get("requested") or ""])[0]
+        head = str(label).lower()
+        return "%s (Rs %s): " % (head, gross) if gross else "%s: " % head
+    if mode == "whole_hall":
+        label = (tier.get("matched") or [""])[0]
+        return "%s (whole hall): " % str(label).lower() if label else ""
+    return ""
 
 
 def seats_cell(show, party):
@@ -125,14 +143,28 @@ def status_dot(show):
     return "muted"
 
 
-def fallback_table(radar):
+def rating_words(entry):
+    """One ratings entry ('8.1', 8.1, or {'rating':..,'source':..}) to a
+    cell like '8.1 (IMDb)'. Ratings arrive from the calling agent's own
+    lookup; this page only labels what it was handed."""
+    if isinstance(entry, dict):
+        value = entry.get("rating")
+        source = entry.get("source") or ""
+        text = str(value) if value is not None else ""
+        return ("%s (%s)" % (text, source)) if text and source else text
+    return str(entry) if entry is not None else ""
+
+
+def fallback_table(radar, ratings=None):
     """Always-rendered static table: the full answer without JS, CDN, or
     tiles (SPEC R75). One row per ranked show."""
     venues = {v.get("theatreId"): v for v in radar.get("venues") or []}
     party = (radar.get("query") or {}).get("party_size") or 1
+    ratings = {str(k).strip().lower(): v for k, v in (ratings or {}).items()}
+    rating_col = ("<th>Rating</th>" if ratings else "")
     head = ("<tr><th>Venue</th><th>Distance</th><th>Drive est.</th>"
-            "<th>Show</th><th>Format</th><th>Status</th><th>Seats</th>"
-            "<th>Link</th></tr>")
+            "<th>Show</th>%s<th>Format</th><th>Status</th><th>Seats</th>"
+            "<th>Link</th></tr>" % rating_col)
     rows = [head]
     for show in radar.get("shows") or []:
         venue = venues.get(show.get("theatreId")) or {}
@@ -149,14 +181,18 @@ def fallback_table(radar):
         link = show.get("deep_link") or ""
         link_cell = ('<a class="book" href="%s" target="_blank" '
                      'rel="noopener">book</a>' % esc(link)) if link else ""
-        seats_text = seats_cell(show, party)
+        seats_text = tier_prefix(show.get("seats")) + seats_cell(show, party)
         seats_html = ('<strong>%s</strong>' % esc(seats_text)
                       if show.get("seats", {}) and
                       show["seats"].get("meets_party_size")
                       else esc(seats_text))
+        rating_cell = ""
+        if ratings:
+            entry = ratings.get(str(show.get("film") or "").strip().lower())
+            rating_cell = '<td class="num">%s</td>' % esc(rating_words(entry))
         rows.append(
             '<tr><td class="c-venue">%s</td><td class="num">%s</td>'
-            '<td class="num">%s</td><td>%s</td><td class="c-fmt">%s</td>'
+            '<td class="num">%s</td><td>%s</td>%s<td class="c-fmt">%s</td>'
             '<td><span class="dot %s"></span>%s</td><td>%s</td>'
             '<td class="c-link">%s</td></tr>' % (
                 esc(venue.get("name") or show.get("theatreId")),
@@ -165,6 +201,7 @@ def fallback_table(radar):
                                      "heuristic")) if drive else "",
                 esc("%s %s" % (show.get("showTime") or "?",
                                show.get("film") or "")),
+                rating_cell,
                 esc(fmt),
                 status_dot(show),
                 esc(status_cell(show)),
@@ -183,14 +220,16 @@ def fallback_table(radar):
             rows.append(
                 '<tr><td class="c-venue">%s</td><td class="num">%s</td>'
                 '<td class="num">%s</td>'
-                '<td colspan="5">%s</td></tr>' % (
+                '<td colspan="%d">%s</td></tr>' % (
                     esc(venue.get("name") or venue.get("theatreId")),
                     esc("%.1f km" % km) if km is not None else "",
                     esc("%d min (%s)" % (drive, venue.get("drive_min_source")
                                          or "heuristic")) if drive else "",
+                    5 + (1 if ratings else 0),
                     esc(outcome)))
         if len(rows) == 1:
-            rows.append('<tr><td colspan="8">no shows matched</td></tr>')
+            rows.append('<tr><td colspan="%d">no shows matched</td></tr>'
+                        % (8 + (1 if ratings else 0)))
     return "<table>%s</table>" % "".join(rows)
 
 
@@ -467,8 +506,12 @@ SCRIPT = """
 """ % INK
 
 
-def render(radar):
-    """Pure: radar document dict to a complete HTML page string (SPEC R78)."""
+def render(radar, ratings=None):
+    """Pure: radar document dict to a complete HTML page string (SPEC R78).
+
+    ratings: optional {film name: rating entry} handed in by the calling
+    agent (which looked them up itself); rendered as an extra table column
+    with the source labeled. This page never fetches ratings."""
     query = radar.get("query") or {}
     asked = query_words(query)
     generated = query.get("generated_at") or ""
@@ -530,7 +573,8 @@ def render(radar):
         notice_banner(radar),
         '<div id="map"></div>',
         legend,
-        '<section class="table-wrap">%s</section>' % fallback_table(radar),
+        '<section class="table-wrap">%s</section>'
+        % fallback_table(radar, ratings),
         "<footer>%s</footer>" % esc(FOOTER_CREDIT),
         '<script src="%s" integrity="%s" crossorigin="anonymous"></script>'
         % (LEAFLET_JS, LEAFLET_JS_SRI),
@@ -549,7 +593,25 @@ def main(argv=None):
     parser.add_argument("--in", dest="infile", required=True,
                         help="radar JSON path, or - for stdin")
     parser.add_argument("--out", dest="outfile", default="map.html")
+    parser.add_argument("--ratings", default="",
+                        help="optional film ratings: a JSON file path or an "
+                             "inline JSON object {film name: rating or "
+                             "{rating, source}}, looked up by the caller")
     args = parser.parse_args(argv)
+
+    ratings = None
+    if args.ratings:
+        try:
+            if args.ratings.strip().startswith("{"):
+                ratings = json.loads(args.ratings)
+            else:
+                with open(args.ratings) as fh:
+                    ratings = json.load(fh)
+            if not isinstance(ratings, dict):
+                raise ValueError("ratings must be a JSON object")
+        except (OSError, ValueError) as exc:
+            print("render_map: bad --ratings: %s" % exc, file=sys.stderr)
+            return 2
 
     try:
         if args.infile == "-":
@@ -563,7 +625,7 @@ def main(argv=None):
         print("render_map: bad input JSON: %s" % exc, file=sys.stderr)
         return 2
 
-    page = render(radar)
+    page = render(radar, ratings)
     with open(args.outfile, "w") as fh:
         fh.write(page)
     print("wrote %s" % args.outfile, file=sys.stderr)

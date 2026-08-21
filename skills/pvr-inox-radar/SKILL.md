@@ -61,6 +61,11 @@ Extract from the user's ask:
   shows "from Rs N": the matched tier's per-ticket gross, or the hall's
   cheapest tier (convenience fee and GST are extra at checkout).
 - **Origin**: a locality ("Sector 56 Gurgaon") or a bare city ("Gurugram").
+  After resolving it (geocode or city centre), STATE the resolved place and
+  coordinates in one line before running ("Using Sector 56, Gurugram at
+  28.44, 77.06; say so if that is wrong") so the user can correct the
+  location. The map labels this origin as "You: <label>"; if the user
+  corrects it, geocode the new place and re-run.
 - **City**: usually implied by the locality. If genuinely ambiguous, restate
   the task in one line and ask ONE question instead of guessing.
 

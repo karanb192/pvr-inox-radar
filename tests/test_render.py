@@ -213,5 +213,38 @@ class TestEscaping(unittest.TestCase):
         self.assertNotIn("<", blob)
 
 
+
+
+class TestMapLabels(unittest.TestCase):
+    """The map labels venues and the origin without clicks, and fits every
+    pin up front (SPEC-level UX asks from first-user feedback)."""
+
+    RADAR = {
+        "query": {"party_size": 1,
+                  "origin": {"lat": 28.4595, "lng": 77.0266,
+                             "label": "Gurgaon city centre"}},
+        "venues": [{"theatreId": "1", "name": "Venue 1", "lat": 28.4,
+                    "lng": 77.0, "drive_min_est": 9}],
+        "shows": [], "meta": {},
+    }
+
+    def test_permanent_venue_and_origin_labels(self):
+        page = render_map.render(self.RADAR)
+        self.assertIn("permanent: true", page)
+        self.assertIn("venue-label", page)
+        self.assertIn("origin-label", page)
+        self.assertIn('"You: "', page)
+
+    def test_fit_runs_again_after_load(self):
+        page = render_map.render(self.RADAR)
+        self.assertIn("invalidateSize", page)
+        self.assertIn("fitAll", page)
+        self.assertIn("maxZoom: 14", page)
+
+    def test_short_name_logic_present(self):
+        page = render_map.render(self.RADAR)
+        self.assertIn("shortName", page)
+
+
 if __name__ == "__main__":
     unittest.main()

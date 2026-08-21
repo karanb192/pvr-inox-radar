@@ -410,6 +410,14 @@ footer { color: var(--sub); font-size: 11.5px; line-height: 1.6;
 .chip-verified.full { background: var(--full); }
 .chip-unverified { border: 1px dashed #4b5563; color: #ffffff;
                    text-shadow: 0 1px 1px rgba(0,0,0,0.35); }
+.venue-label { background: var(--card); border: 1px solid var(--line);
+               border-radius: 6px; padding: 2px 7px; white-space: nowrap;
+               font: 600 11px/1.4 var(--sans); color: var(--ink);
+               box-shadow: 0 1px 3px rgba(22, 19, 13, 0.14); opacity: 0.96; }
+.origin-label { background: var(--origin); border: 0; border-radius: 6px;
+                padding: 2px 8px; white-space: nowrap; color: #ffffff;
+                font: 600 11px/1.4 var(--sans);
+                box-shadow: 0 1px 3px rgba(22, 19, 13, 0.2); }
 .popup-venue { font-weight: 650; margin-bottom: 2px; font-size: 14px; }
 .popup-dist { color: var(--sub); font-size: 12px; margin-bottom: 6px; }
 .leaflet-popup-content { margin: 12px 14px; max-width: 280px;
@@ -501,6 +509,17 @@ SCRIPT = """
       + "OpenStreetMap</a> contributors"
   }).addTo(map);
 
+  // Short on-map name: drop the city suffix and any "City: " prefix so the
+  // label is readable at a glance; the popup keeps the full name.
+  function shortName(name) {
+    var head = String(name || "").split(",")[0].trim();
+    var colon = head.indexOf(": ");
+    if (colon > -1 && head.length - colon > 7) {
+      head = head.slice(colon + 2);
+    }
+    return head.length > 26 ? head.slice(0, 24) + "\\u2026" : head;
+  }
+
   var points = [];
   var origin = q.origin || {};
   if (origin.lat != null && origin.lng != null) {
@@ -508,14 +527,16 @@ SCRIPT = """
     points.push(here);
     L.circleMarker(here, { radius: 8, color: "%(origin)s", weight: 3,
                            fillColor: "#9db8dd", fillOpacity: 0.9 })
-      .addTo(map).bindTooltip(escapeHtml(origin.label || "origin"),
-                              { permanent: false });
+      .addTo(map)
+      .bindTooltip("You: " + escapeHtml(origin.label || "your location"),
+                   { permanent: true, direction: "bottom", offset: [0, 8],
+                     className: "origin-label" });
   }
   var byVenue = {};
   (RADAR.shows || []).forEach(function (s) {
     (byVenue[s.theatreId] = byVenue[s.theatreId] || []).push(s);
   });
-  (RADAR.venues || []).forEach(function (v) {
+  (RADAR.venues || []).forEach(function (v, index) {
     if (v.lat == null || v.lng == null) { return; }
     var at = [Number(v.lat), Number(v.lng)];
     points.push(at);
@@ -526,21 +547,42 @@ SCRIPT = """
       .sort(function (a, b) {
         return (a.showTimeStamp || 0) - (b.showTimeStamp || 0);
       });
+    var label = shortName(v.name);
+    if (v.drive_min_est != null) {
+      label += " \\u00b7 " + v.drive_min_est + " min";
+    }
+    // Alternate label sides so venues sharing a mall do not stack their
+    // labels on the same pixel.
+    var side = index %% 2 === 0 ? "right" : "left";
     L.circleMarker(at, {
       radius: 9, color: color, weight: hollow ? 2 : 1.5,
       dashArray: hollow ? "3 3" : null,
       fillColor: color, fillOpacity: hollow ? 0 : 0.85
     }).addTo(map)
-      .bindTooltip(escapeHtml(v.name))
+      .bindTooltip(escapeHtml(label),
+                   { permanent: true, direction: side,
+                     offset: [side === "right" ? 10 : -10, 0],
+                     className: "venue-label" })
       .bindPopup(popupHtml(v, shows), { maxWidth: 300 });
   });
-  if (points.length > 1) {
-    map.fitBounds(points, { padding: [30, 30] });
-  } else if (points.length === 1) {
-    map.setView(points[0], 12);
-  } else {
-    map.setView([22.97, 78.65], 5);  // India
+
+  // Every pin AND the origin in the first frame: fitBounds with generous
+  // padding (labels need room), re-run after full load because Leaflet can
+  // measure a container mid-layout and clip the fit.
+  function fitAll() {
+    if (points.length > 1) {
+      map.fitBounds(points, { padding: [56, 56], maxZoom: 14 });
+    } else if (points.length === 1) {
+      map.setView(points[0], 12);
+    } else {
+      map.setView([22.97, 78.65], 5);  // India
+    }
   }
+  fitAll();
+  window.addEventListener("load", function () {
+    map.invalidateSize();
+    fitAll();
+  });
 })();
 """ % INK
 

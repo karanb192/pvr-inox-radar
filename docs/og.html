@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OG card source: screenshot at exactly 1200x630</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; }
+:root { --hall: #10131a; --glow: #ece7da; --dim: #9aa0b0; --faint: #6a7080;
+        --seat: #76be43; --sold: #2a303c; --line: #262c39; }
+html, body { width: 1200px; height: 630px; overflow: hidden; }
+body { background: var(--hall); color: var(--glow);
+       font-family: "Bodoni Moda", Didot, Georgia, serif;
+       display: flex; align-items: center; padding: 0 72px; gap: 64px; }
+.left { flex: 1.15; }
+.eyebrow { font: 500 15px/1 "Spline Sans Mono", monospace;
+           letter-spacing: 0.24em; text-transform: uppercase;
+           color: var(--dim); margin-bottom: 26px; }
+h1 { font-size: 64px; line-height: 1.08; font-weight: 400;
+     letter-spacing: 0.005em; margin-bottom: 30px; }
+.cmd { display: inline-flex; align-items: center; gap: 12px;
+       background: #161a23; border: 1px solid var(--line);
+       border-radius: 10px; padding: 14px 20px;
+       font: 500 17px/1 "Spline Sans Mono", monospace; }
+.cmd .dollar { color: var(--seat); }
+.site { margin-top: 26px; font: 400 14px/1 "Spline Sans Mono", monospace;
+        color: var(--faint); letter-spacing: 0.08em; }
+.right { flex: 0.85; }
+.screenline { width: 78%; margin: 0 auto 6px; height: 18px;
+              border: solid var(--faint); border-width: 2px 0 0;
+              border-radius: 100% 100% 0 0 / 220% 220% 0 0; opacity: 0.5; }
+.screenword { text-align: center; font: 500 10px/1 "Spline Sans Mono", monospace;
+              letter-spacing: 0.3em; text-transform: uppercase;
+              color: var(--faint); margin-bottom: 22px; }
+.grid { display: grid; justify-content: center; gap: 6px; }
+.g-row { display: grid; grid-auto-flow: column; gap: 6px; }
+.g-row.tiergap { margin-top: 9px; }
+.seat { width: 19px; height: 19px; border-radius: 4px 4px 5px 5px; }
+.free { border: 1.5px solid rgba(118, 190, 67, 0.34); }
+.sold { background: var(--sold); }
+.aisle { visibility: hidden; }
+.pick { background: var(--seat); border-color: var(--seat);
+        box-shadow: 0 0 16px rgba(118, 190, 67, 0.5); }
+.cap { text-align: center; margin-top: 20px;
+       font: 400 12.5px/1 "Spline Sans Mono", monospace; color: var(--seat); }
+</style>
+</head>
+<body>
+<div class="left">
+  <div class="eyebrow">PVR INOX Radar &middot; a Claude Code skill</div>
+  <h1>Four seats together. Twelve minutes away.</h1>
+  <div class="cmd"><span class="dollar">$</span>npx skills add karanb192/pvr-inox-radar</div>
+  <div class="site">pvr-inox-radar.karanbansal.in</div>
+</div>
+<div class="right">
+  <div class="screenline"></div>
+  <div class="screenword">screen</div>
+  <div class="grid" id="grid"></div>
+  <div class="cap">4 together: yes (best run 12)</div>
+</div>
+<script>
+var HALL = [
+  ["___OOOOOOOOOOOO___", 0], ["___OOOOOOOOOOOO___", 0],
+  ["___OOOOOOOOOOOO___", 0], ["___OOOOOOOOOOOO___", 0],
+  ["___OOOOOOOOOOOO___", 1], ["___OOOOOOOOOOOO___", 1],
+  ["___OOOOOOOOOOOO___", 0], ["___OOOOOOOOOOOO___", 1],
+  ["xxxxxxxxxxxxxxx___", 0], ["xxxxxxxxxxxxxxx___", 0],
+  ["__OOOOOOOOOOOOO___", 0], ["__OOOOOOOO__OOOOO_", 0]
+];
+var grid = document.getElementById("grid");
+HALL.forEach(function (row, ri) {
+  var el = document.createElement("div");
+  el.className = "g-row" + (row[1] ? " tiergap" : "");
+  row[0].split("").forEach(function (ch, ci) {
+    var s = document.createElement("span");
+    s.className = "seat " + (ch === "O" ? "free" : ch === "x" ? "sold" : "aisle");
+    if (ri === 5 && ci >= 7 && ci <= 10) { s.className = "seat free pick"; }
+    el.appendChild(s);
+  });
+  grid.appendChild(el);
+});
+</script>
+</body>
+</html>

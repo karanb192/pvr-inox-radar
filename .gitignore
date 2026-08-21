@@ -1,0 +1,14 @@
+# Build scratch (dossier, API notes, spec drafts, sample outputs)
+.build/
+
+# Demo / run outputs
+map.html
+radar.json
+sample-map.html
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store

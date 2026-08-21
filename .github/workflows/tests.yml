@@ -1,0 +1,22 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      # Stdlib only: no pip install step, by design.
+      # The suite is fully offline (fixtures and mocked transport); the live
+      # smoke test is excluded from discovery and never runs in CI.
+      - run: python3 -m unittest discover -s tests -v

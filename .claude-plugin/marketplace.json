@@ -1,0 +1,18 @@
+{
+  "name": "pvr-inox-radar",
+  "owner": {
+    "name": "Karan Bansal",
+    "email": "karan@karanbansal.in",
+    "url": "https://github.com/karanb192"
+  },
+  "metadata": { "description": "pvr-inox-radar - PVR INOX showtimes on a map from your terminal" },
+  "plugins": [
+    {
+      "name": "pvr-inox-radar",
+      "description": "Ask for a movie, a night, and a seat count; get one HTML map of PVR INOX shows with availability colors, seats-together counts, travel times, and deep links to PVR's seat page. Read-only, you book on pvrcinemas.com.",
+      "source": "./",
+      "category": "productivity",
+      "tags": ["movies", "india", "showtimes", "maps"]
+    }
+  ]
+}

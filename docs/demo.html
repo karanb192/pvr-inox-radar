@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>PVR INOX Radar: Awarapan, Sat 22 Aug, 18:00 to 23:59 IST, 2 seats together, within 6 km of Gurgaon city centre</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<style>
+* { box-sizing: border-box; }
+:root {
+  --paper: #f7f5f0; --card: #fffdf9; --ink: #16130d; --sub: #7a7264;
+  --line: #e6e1d6; --ok: #177245; --warn: #b3540e; --full: #b3261e;
+  --muted: #8a8375; --origin: #23508f;
+  --serif: "Iowan Old Style", "Palatino Nova", Palatino, Georgia,
+           "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+}
+body { margin: 0; background: var(--paper); color: var(--ink);
+       font: 15px/1.55 var(--sans);
+       -webkit-font-smoothing: antialiased; }
+header { padding: 26px 26px 6px; }
+header h1 { margin: 0 0 10px; font-size: 11px; font-weight: 600;
+            letter-spacing: 0.22em; text-transform: uppercase;
+            color: var(--sub); }
+header .ask { font-family: var(--serif); font-size: 30px; line-height: 1.22;
+              font-weight: 500; letter-spacing: -0.01em; max-width: 46em; }
+header .stamp { color: var(--sub); font-size: 12.5px; margin-top: 8px; }
+.stats { display: flex; flex-wrap: wrap; gap: 0; padding: 10px 26px 2px; }
+.stat { padding: 6px 22px 6px 0; margin-right: 22px;
+        border-right: 1px solid var(--line); }
+.stat:last-child { border-right: 0; }
+.stat-n { font-family: var(--serif); font-size: 22px;
+          font-variant-numeric: tabular-nums; }
+.stat-l { font-size: 10.5px; letter-spacing: 0.14em; text-transform:
+          uppercase; color: var(--sub); margin-top: 1px; }
+.notice { background: #fbf3dd; border: 1px solid #eaddb4; color: #6d5716;
+          padding: 10px 14px; margin: 14px 26px 0; border-radius: 10px;
+          font-size: 13.5px; }
+#map { height: 60vh; min-height: 340px; margin: 16px 26px 0;
+       border-radius: 14px; border: 1px solid var(--line);
+       box-shadow: 0 1px 2px rgba(22, 19, 13, 0.05),
+                   0 10px 30px rgba(22, 19, 13, 0.06); }
+section, footer { padding: 12px 26px; }
+.legend { font-size: 12.5px; color: var(--sub); padding-top: 14px; }
+.legend strong { color: var(--ink); font-size: 10.5px; font-weight: 600;
+                 letter-spacing: 0.14em; text-transform: uppercase; }
+.legend ul { display: inline; margin: 0 0 0 10px; padding: 0;
+             list-style: none; }
+.legend li { display: inline-block; margin: 2px 16px 2px 0; }
+.legend > div { margin-top: 6px; }
+.swatch { display: inline-block; width: 10px; height: 10px;
+          border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.swatch.hollow { background: transparent;
+                 border: 2px dashed var(--muted);
+                 width: 7px; height: 7px; }
+.chipdemo { display: inline-block; padding: 1px 9px; border-radius: 999px;
+            font-size: 11.5px; margin-right: 6px; color: #ffffff;
+            font-variant-numeric: tabular-nums; }
+.table-wrap { padding-top: 6px; }
+.table-wrap table { border-collapse: collapse; width: 100%;
+        background: var(--card); font-size: 13.5px;
+        border: 1px solid var(--line); border-radius: 14px;
+        overflow: hidden; box-shadow: 0 1px 2px rgba(22, 19, 13, 0.04); }
+.table-wrap { overflow-x: auto; }
+th, td { padding: 10px 14px; text-align: left; white-space: nowrap;
+         border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em;
+     text-transform: uppercase; color: var(--sub);
+     border-bottom-width: 2px; }
+td.num, td:nth-child(4) { font-variant-numeric: tabular-nums; }
+td.c-venue { font-weight: 600; }
+td.c-fmt { color: var(--sub); font-size: 12.5px; }
+td strong { font-weight: 650; color: var(--ok); }
+.dot { display: inline-block; width: 8px; height: 8px;
+       border-radius: 50%; margin-right: 7px; vertical-align: 0;
+       background: var(--muted); }
+.dot.ok { background: var(--ok); }
+.dot.warn { background: var(--warn); }
+.dot.full { background: var(--full); }
+a.book { display: inline-block; padding: 2px 12px; border-radius: 999px;
+         border: 1px solid var(--line); color: var(--ink);
+         text-decoration: none; font-size: 12.5px; font-weight: 600;
+         background: var(--paper); }
+a.book:hover { border-color: var(--ink); }
+td a { color: var(--origin); }
+footer { color: var(--sub); font-size: 11.5px; line-height: 1.6;
+         padding-bottom: 26px; max-width: 62em; }
+.chip { display: inline-block; margin: 3px 5px 3px 0; padding: 2px 10px;
+        border-radius: 999px; font-size: 12px; text-decoration: none;
+        color: #ffffff; border: 1px solid transparent;
+        font-variant-numeric: tabular-nums; }
+.chip-verified.ok { background: var(--ok); }
+.chip-verified.warn { background: var(--warn); }
+.chip-verified.full { background: var(--full); }
+.chip-unverified { border: 1px dashed #4b5563; color: #ffffff;
+                   text-shadow: 0 1px 1px rgba(0,0,0,0.35); }
+.popup-venue { font-weight: 650; margin-bottom: 2px; font-size: 14px; }
+.popup-dist { color: var(--sub); font-size: 12px; margin-bottom: 6px; }
+.leaflet-popup-content { margin: 12px 14px; max-width: 280px;
+                         font-family: var(--sans); }
+.leaflet-popup-content-wrapper { border-radius: 12px; }
+.leaflet-container { font-family: var(--sans); }
+img { max-width: 100%; }
+@media (max-width: 640px) {
+  header, .stats, section, footer { padding-left: 14px;
+                                    padding-right: 14px; }
+  #map { margin-left: 14px; margin-right: 14px; }
+  header .ask { font-size: 23px; }
+}
+</style>
+</head>
+<body>
+<header>
+<h1>PVR INOX Radar</h1>
+<div class="ask">Awarapan, Sat 22 Aug, 18:00 to 23:59 IST, 2 seats together, within 6 km of Gurgaon city centre</div>
+<div class="stamp">generated 2026-08-21T10:35:33+05:30 IST</div>
+</header>
+<section class="stats"><div class="stat"><div class="stat-n">3</div><div class="stat-l">venues</div></div><div class="stat"><div class="stat-n">8</div><div class="stat-l">shows</div></div><div class="stat"><div class="stat-n">3</div><div class="stat-l">seat-verified</div></div><div class="stat"><div class="stat-n">9 min</div><div class="stat-l">closest drive</div></div></section>
+<div id="map"></div>
+<section class="legend"><strong>Pins</strong><ul><li><span class="swatch" style="background:#177245"></span>verified seats for your party</li><li><span class="swatch" style="background:#b3540e"></span>available or filling (unverified)</li><li><span class="swatch" style="background:#b3261e"></span>housefull or sold out (reserved: only PVR's green status color is confirmed so far, so this pin state cannot appear yet)</li><li><span class="swatch" style="background:#8a8375"></span>unknown or no matching shows</li><li><span class="swatch hollow"></span>booking not open yet (not sold out)</li></ul><div><strong>Showtime chips</strong><ul><li><span class="chipdemo chip-verified ok" style="background:#177245">06:05 PM</span>solid: seats counted from the live seat map</li><li><span class="chipdemo chip-unverified" style="background:#8a8375;border:1px dashed #4b5563">9:00 PM · ?</span>dashed with a ? : PVR's own label, not verified</li></ul></div><div>Note: availability labels come from PVR and can lag; counted seats are exact at fetch time.</div></section>
+<section class="table-wrap"><table><tr><th>Venue</th><th>Distance</th><th>Drive est.</th><th>Show</th><th>Format</th><th>Status</th><th>Seats</th><th>Link</th></tr><tr><td class="c-venue">HDFC Millennia PVR: MGF,  Gurugram</td><td class="num">5.8 km</td><td class="num">9 min (osrm)</td><td>06:05 PM AWARAPAN 2 (HINDI ATMOS WITH ENGLISH SUBTITLE)</td><td class="c-fmt">ATMOS</td><td><span class="dot ok"></span>verified seat count</td><td><strong>2 together: yes (best run 10)</strong></td><td class="c-link"><a class="book" href="https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxtNnWZtLAlMVw==" target="_blank" rel="noopener">book</a></td></tr><tr><td class="c-venue">INOX Ardee Mall, Gurugram</td><td class="num">5.5 km</td><td class="num">12 min (osrm)</td><td>08:00 PM AWARAPAN 2 (HINDI ATMOS WITH ENGLISH SUBTITLE)</td><td class="c-fmt">INSIGNIA ATMOS</td><td><span class="dot ok"></span>verified seat count</td><td><strong>2 together: yes (best run 6)</strong></td><td class="c-link"><a class="book" href="https://www.pvrcinemas.com/seatlayout/3bUFfs(dglOe1a98BReXZw==" target="_blank" rel="noopener">book</a></td></tr><tr><td class="c-venue">PVR City Centre Gurugram</td><td class="num">5.7 km</td><td class="num">9 min (osrm)</td><td>08:00 PM AWARAPAN 2 (HINDI)</td><td class="c-fmt"></td><td><span class="dot ok"></span>verified seat count</td><td><strong>2 together: yes (best run 10)</strong></td><td class="c-link"><a class="book" href="https://www.pvrcinemas.com/seatlayout/ixqn9)O5i(QVWuaA4b4d9w==" target="_blank" rel="noopener">book</a></td></tr><tr><td class="c-venue">HDFC Millennia PVR: MGF,  Gurugram</td><td class="num">5.8 km</td><td class="num">9 min (osrm)</td><td>09:00 PM AWARAPAN 2 (HINDI ATMOS)</td><td class="c-fmt">ATMOS</td><td><span class="dot warn"></span>available (Available)</td><td>unverified</td><td class="c-link"><a class="book" href="https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxs8ChRWNL09eg==" target="_blank" rel="noopener">book</a></td></tr><tr><td class="c-venue">HDFC Millennia PVR: MGF,  Gurugram</td><td class="num">5.8 km</td><td class="num">9 min (osrm)</td><td>10:30 PM AWARAPAN 2 (HINDI)</td><td class="c-fmt"></td><td><span class="dot warn"></span>available (Available)</td><td>unverified</td><td class="c-link"><a class="book" href="https://www.pvrcinemas.com/seatlayout/(nn4xEO)6fePr2VpF8Iaeg==" target="_blank" rel="noopener">book</a></td></tr><tr><td class="c-venue">INOX Ardee Mall, Gurugram</td><td class="num">5.5 km</td><td class="num">12 min (osrm)</td><td>10:55 PM AWARAPAN 2 (HINDI ATMOS)</td><td class="c-fmt">INSIGNIA ATMOS</td><td><span class="dot warn"></span>available (Available)</td><td>unverified</td><td class="c-link"><a class="book" href="https://www.pvrcinemas.com/seatlayout/3bUFfs(dglNjJXJEqstxeA==" target="_blank" rel="noopener">book</a></td></tr><tr><td class="c-venue">PVR City Centre Gurugram</td><td class="num">5.7 km</td><td class="num">9 min (osrm)</td><td>10:55 PM AWARAPAN 2 (HINDI)</td><td class="c-fmt"></td><td><span class="dot warn"></span>available (Available)</td><td>unverified</td><td class="c-link"><a class="book" href="https://www.pvrcinemas.com/seatlayout/ixqn9)O5i(RRIuks4WTY2A==" target="_blank" rel="noopener">book</a></td></tr><tr><td class="c-venue">HDFC Millennia PVR: MGF,  Gurugram</td><td class="num">5.8 km</td><td class="num">9 min (osrm)</td><td>11:55 PM AWARAPAN 2 (HINDI ATMOS)</td><td class="c-fmt">ATMOS</td><td><span class="dot warn"></span>available (Available)</td><td>unverified</td><td class="c-link"><a class="book" href="https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxtB00AD2CZlRQ==" target="_blank" rel="noopener">book</a></td></tr></table></section>
+<footer>Data: PVR INOX web API (unofficial, read-only). Client adapted from pvr-inox-mcp (MIT). Map: Leaflet, (c) OpenStreetMap contributors. Drive times are estimates. Book on pvrcinemas.com.</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script>const RADAR = {"query": {"city": "Gurugram", "movie": "Awarapan", "format": null, "date": "2026-08-22", "time_from": "18:00", "time_to": "23:59", "party_size": 2, "max_km": 6.0, "limit": 40, "seat_detail": 3, "no_osrm": false, "fixtures": null, "origin": {"lat": 28.4595, "lng": 77.0266, "label": "Gurgaon city centre", "source": "caller"}, "generated_at": "2026-08-21T10:35:33+05:30"}, "venues": [{"theatreId": "241", "name": "INOX Ardee Mall, Gurugram", "lat": "28.44507629", "lng": "77.08068787", "distance_km": 5.5, "distance_from": "caller", "drive_min_est": 12, "drive_min_source": "osrm", "booking_open": true, "best_status": "verified_ok", "formats": ["INSIGNIA"]}, {"theatreId": "439", "name": "PVR City Centre Gurugram", "lat": "28.479051", "lng": "77.080736", "distance_km": 5.7, "distance_from": "caller", "drive_min_est": 9, "drive_min_source": "osrm", "booking_open": true, "best_status": "verified_ok", "formats": ["PREMIUM"]}, {"theatreId": "466", "name": "HDFC Millennia PVR: MGF,  Gurugram", "lat": "28.480838", "lng": "77.080207", "distance_km": 5.8, "distance_from": "caller", "drive_min_est": 9, "drive_min_source": "osrm", "booking_open": true, "best_status": "verified_ok", "formats": ["PREMIUM"]}], "shows": [{"theatreId": "466", "sessionId": 38837, "film": "AWARAPAN 2 (HINDI ATMOS WITH ENGLISH SUBTITLE)", "filmId": "33295", "movieId": "38351", "language": "Hindi", "language_disputed": false, "showTime": "06:05 PM", "showTimeStamp": 1787402100000, "screenName": "SCREEN 3", "screenType": "", "movieFormat": "ATMOS", "soundFormat": "ATMOS", "statusCode": "76BE43", "status_category": "available", "statusTxt": "Available", "deep_link": "https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxtNnWZtLAlMVw==", "time_unparsed": false, "seats": {"free": 202, "sold": 20, "held": 0, "zone_free": 38, "zone_rows_used": ["H", "J", "K", "L", "M"], "best_run": 10, "best_where": "H9-H18", "meets_party_size": true, "widened_to": [], "hall_free": 202, "hall_best_run": 10, "hall_meets_party_size": true, "premium": false, "price_tiers": [{"code": "BR-RECLINER ROWS", "description": "RECLINER ROWS", "price": "680.00", "net": "576.26"}, {"code": "QR-PRIME ROWS", "description": "PRIME ROWS", "price": "510.00", "net": "432.20"}, {"code": "CR-CLASSIC ROWS", "description": "CLASSIC ROWS", "price": "400.00", "net": "338.98"}], "verified": true}, "seat_error": null, "rank": 1}, {"theatreId": "241", "sessionId": 45377, "film": "AWARAPAN 2 (HINDI ATMOS WITH ENGLISH SUBTITLE)", "filmId": "33295", "movieId": "38351", "language": "Hindi", "language_disputed": false, "showTime": "08:00 PM", "showTimeStamp": 1787409000000, "screenName": "INSIGNIA 1", "screenType": "INSIGNIA", "movieFormat": "ATMOS", "soundFormat": "ATMOS", "statusCode": "76BE43", "status_category": "available", "statusTxt": "Available", "deep_link": "https://www.pvrcinemas.com/seatlayout/3bUFfs(dglOe1a98BReXZw==", "time_unparsed": false, "seats": {"free": 22, "sold": 8, "held": 0, "zone_free": 10, "zone_rows_used": ["B", "A"], "best_run": 6, "best_where": "A1-A6", "meets_party_size": true, "widened_to": [], "hall_free": 22, "hall_best_run": 6, "hall_meets_party_size": true, "premium": true, "price_tiers": [{"code": "RP-RECLINER PRIME", "description": "RECLINER PRIME", "price": "950.00", "net": "805.08"}, {"code": "RE-RECLINER", "description": "RECLINER", "price": "750.00", "net": "635.58"}], "verified": true}, "seat_error": null, "rank": 2}, {"theatreId": "439", "sessionId": 16620, "film": "AWARAPAN 2 (HINDI)", "filmId": "33295", "movieId": "33295", "language": "Hindi", "language_disputed": false, "showTime": "08:00 PM", "showTimeStamp": 1787409000000, "screenName": "SCREEN 1", "screenType": "", "movieFormat": "", "soundFormat": "", "statusCode": "76BE43", "status_category": "available", "statusTxt": "Available", "deep_link": "https://www.pvrcinemas.com/seatlayout/ixqn9)O5i(QVWuaA4b4d9w==", "time_unparsed": false, "seats": {"free": 286, "sold": 24, "held": 0, "zone_free": 30, "zone_rows_used": ["J", "K", "L", "M"], "best_run": 10, "best_where": "J1-J10", "meets_party_size": true, "widened_to": [], "hall_free": 286, "hall_best_run": 13, "hall_meets_party_size": true, "premium": false, "price_tiers": [{"code": "BR-RECLINER ROWS", "description": "RECLINER ROWS", "price": "650.00", "net": "550.84"}, {"code": "OR-EXTRA LEGROOM ROWS", "description": "EXTRA LEGROOM ROWS", "price": "470.00", "net": "398.30"}, {"code": "QR-PRIME ROWS", "description": "PRIME ROWS", "price": "450.00", "net": "381.36"}, {"code": "CR-CLASSIC ROWS", "description": "CLASSIC ROWS", "price": "370.00", "net": "313.56"}], "verified": true}, "seat_error": null, "rank": 3}, {"theatreId": "466", "sessionId": 38838, "film": "AWARAPAN 2 (HINDI ATMOS)", "filmId": "33295", "movieId": "38349", "language": "Hindi", "language_disputed": false, "showTime": "09:00 PM", "showTimeStamp": 1787412600000, "screenName": "SCREEN 3", "screenType": "", "movieFormat": "ATMOS", "soundFormat": "ATMOS", "statusCode": "76BE43", "status_category": "available", "statusTxt": "Available", "deep_link": "https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxs8ChRWNL09eg==", "time_unparsed": false, "seats": null, "seat_error": null, "rank": 4}, {"theatreId": "466", "sessionId": 38864, "film": "AWARAPAN 2 (HINDI)", "filmId": "33295", "movieId": "33295", "language": "Hindi", "language_disputed": false, "showTime": "10:30 PM", "showTimeStamp": 1787418000000, "screenName": "SCREEN 5", "screenType": "", "movieFormat": "", "soundFormat": "", "statusCode": "76BE43", "status_category": "available", "statusTxt": "Available", "deep_link": "https://www.pvrcinemas.com/seatlayout/(nn4xEO)6fePr2VpF8Iaeg==", "time_unparsed": false, "seats": null, "seat_error": null, "rank": 5}, {"theatreId": "241", "sessionId": 45378, "film": "AWARAPAN 2 (HINDI ATMOS)", "filmId": "33295", "movieId": "38349", "language": "Hindi", "language_disputed": false, "showTime": "10:55 PM", "showTimeStamp": 1787419500000, "screenName": "INSIGNIA 1", "screenType": "INSIGNIA", "movieFormat": "ATMOS", "soundFormat": "ATMOS", "statusCode": "76BE43", "status_category": "available", "statusTxt": "Available", "deep_link": "https://www.pvrcinemas.com/seatlayout/3bUFfs(dglNjJXJEqstxeA==", "time_unparsed": false, "seats": null, "seat_error": null, "rank": 6}, {"theatreId": "439", "sessionId": 16621, "film": "AWARAPAN 2 (HINDI)", "filmId": "33295", "movieId": "33295", "language": "Hindi", "language_disputed": false, "showTime": "10:55 PM", "showTimeStamp": 1787419500000, "screenName": "SCREEN 1", "screenType": "", "movieFormat": "", "soundFormat": "", "statusCode": "76BE43", "status_category": "available", "statusTxt": "Available", "deep_link": "https://www.pvrcinemas.com/seatlayout/ixqn9)O5i(RRIuks4WTY2A==", "time_unparsed": false, "seats": null, "seat_error": null, "rank": 7}, {"theatreId": "466", "sessionId": 38839, "film": "AWARAPAN 2 (HINDI ATMOS)", "filmId": "33295", "movieId": "38349", "language": "Hindi", "language_disputed": false, "showTime": "11:55 PM", "showTimeStamp": 1787423100000, "screenName": "SCREEN 3", "screenType": "", "movieFormat": "ATMOS", "soundFormat": "ATMOS", "statusCode": "76BE43", "status_category": "available", "statusTxt": "Available", "deep_link": "https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxtB00AD2CZlRQ==", "time_unparsed": false, "seats": null, "seat_error": null, "rank": 8}], "meta": {"calls_made": 9, "source": "live", "cinemas_queried": [{"theatreId": "241", "name": "INOX Ardee Mall, Gurugram", "outcome": "open", "error": null, "shows_matched": 2}, {"theatreId": "439", "name": "PVR City Centre Gurugram", "outcome": "open", "error": null, "shows_matched": 2}, {"theatreId": "466", "name": "HDFC Millennia PVR: MGF,  Gurugram", "outcome": "open", "error": null, "shows_matched": 4}], "cinemas_skipped": [{"theatreId": "485", "name": "PVR Mega Mall Gurugram", "reason": "outside radius (6.8 km > 6 km)"}, {"theatreId": "572", "name": "PVR Elan Miracle, Sec 84, Gurugram", "reason": "outside radius (7.9 km > 6 km)"}, {"theatreId": "283", "name": "INOX AIPL Joy Street Mall Gurugram", "reason": "outside radius (8.1 km > 6 km)"}, {"theatreId": "293", "name": "INOX World Mark, Gurugram", "reason": "outside radius (8.2 km > 6 km)"}, {"theatreId": "366", "name": "Gurugram: PVR Directors Cut Ambience Mall", "reason": "outside radius (8.5 km > 6 km)"}, {"theatreId": "470", "name": "Gurugram Pepsi PVR Ambience", "reason": "outside radius (8.5 km > 6 km)"}, {"theatreId": "445", "name": "PVR Elan Town Centre, Sec 67, Gurugram", "reason": "outside radius (8.7 km > 6 km)"}, {"theatreId": "234", "name": "INOX Sapphire 83 Gurugram", "reason": "outside radius (9.4 km > 6 km)"}, {"theatreId": "460", "name": "INOX IRIS Broadway Gurugram", "reason": "outside radius (9.9 km > 6 km)"}, {"theatreId": "269", "name": "INOX Sapphire 90 Mall, Gurugram", "reason": "outside radius (10.9 km > 6 km)"}, {"theatreId": "446", "name": "PVR Elan Mercado, Sec 80, Gurugram", "reason": "outside radius (11.3 km > 6 km)"}], "partial": false, "booking_open": true, "message": null, "error": null, "excluded_by_party": 0, "relaxations_applied": [], "caveats": ["A withheld seat is indistinguishable from a sold one without seat history: PVR opens dates with rows withheld and releases them later (finding by notprashanth/pvr-inox-mcp, MIT).", "Availability labels come from PVR and can lag in both directions (measured by notprashanth/pvr-inox-mcp); counted seats are exact at fetch time.", "Drive times are estimates."]}};</script>
+<script>
+(function () {
+  if (typeof L === "undefined") { return; }  // CDN blocked: table has it all
+  var q = RADAR.query || {};
+  var party = q.party_size || 1;
+  var PIN = { verified_ok: "#177245", available: "#b3540e",
+              filling: "#b3540e", housefull: "#b3261e", soldout: "#b3261e",
+              unknown: "#8a8375", none: "#b5afa2", closed: "#8a8375" };
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;",
+               '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function seatsBadge(s) {
+    if (!s.seats) { return "?"; }
+    if (s.seats.meets_party_size) {
+      return party > 1 ? party + " together" : s.seats.best_run + " in a row";
+    }
+    if (s.seats.hall_meets_party_size) { return "zone full"; }
+    return "no " + party + " together";
+  }
+  function chipClass(s) {
+    if (!s.seats) { return "chip chip-unverified"; }
+    if (s.seats.meets_party_size) { return "chip chip-verified ok"; }
+    if (s.seats.hall_meets_party_size) { return "chip chip-verified warn"; }
+    return "chip chip-verified full";
+  }
+  function chipStyle(s) {
+    if (s.seats) { return ""; }
+    var hex = /^[0-9A-Fa-f]{6}$/.test(s.statusCode || "")
+      ? "#" + s.statusCode : "#8a8375";
+    return ' style="background:' + hex + '"';
+  }
+  function chipHtml(s) {
+    var bits = [escapeHtml(s.showTime || "?")];
+    var fmt = s.screenType || s.movieFormat;
+    if (fmt) { bits.push(escapeHtml(fmt)); }
+    bits.push(escapeHtml(seatsBadge(s)));
+    var body = bits.join(" \u00b7 ");
+    if (s.deep_link) {
+      return '<a class="' + chipClass(s) + '"' + chipStyle(s)
+        + ' href="' + escapeHtml(s.deep_link)
+        + '" target="_blank" rel="noopener">' + body + "</a>";
+    }
+    return '<span class="' + chipClass(s) + '"' + chipStyle(s) + ">"
+      + body + "</span>";
+  }
+  function popupHtml(v, shows) {
+    var out = '<div class="popup-venue">' + escapeHtml(v.name) + "</div>";
+    var dist = [];
+    if (v.distance_km != null) { dist.push(v.distance_km + " km"); }
+    if (v.drive_min_est != null) {
+      dist.push("about " + v.drive_min_est + " min drive (est., "
+                + (v.drive_min_source || "heuristic") + ")");
+    }
+    if (dist.length) {
+      out += '<div class="popup-dist">' + escapeHtml(dist.join(", ")) + "</div>";
+    }
+    if (!shows.length) {
+      out += '<div class="popup-dist">'
+        + (v.booking_open === false
+           ? "booking not open yet for this date (not sold out)"
+           : "no shows matched the query") + "</div>";
+    }
+    shows.forEach(function (s) { out += chipHtml(s); });
+    return out;
+  }
+
+  var map = L.map("map", { scrollWheelZoom: false });
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
+      + "OpenStreetMap</a> contributors"
+  }).addTo(map);
+
+  var points = [];
+  var origin = q.origin || {};
+  if (origin.lat != null && origin.lng != null) {
+    var here = [Number(origin.lat), Number(origin.lng)];
+    points.push(here);
+    L.circleMarker(here, { radius: 8, color: "#23508f", weight: 3,
+                           fillColor: "#9db8dd", fillOpacity: 0.9 })
+      .addTo(map).bindTooltip(escapeHtml(origin.label || "origin"),
+                              { permanent: false });
+  }
+  var byVenue = {};
+  (RADAR.shows || []).forEach(function (s) {
+    (byVenue[s.theatreId] = byVenue[s.theatreId] || []).push(s);
+  });
+  (RADAR.venues || []).forEach(function (v) {
+    if (v.lat == null || v.lng == null) { return; }
+    var at = [Number(v.lat), Number(v.lng)];
+    points.push(at);
+    var status = v.best_status || "unknown";
+    var color = PIN[status] || PIN.unknown;
+    var hollow = status === "closed";
+    var shows = (byVenue[v.theatreId] || []).slice()
+      .sort(function (a, b) {
+        return (a.showTimeStamp || 0) - (b.showTimeStamp || 0);
+      });
+    L.circleMarker(at, {
+      radius: 9, color: color, weight: hollow ? 2 : 1.5,
+      dashArray: hollow ? "3 3" : null,
+      fillColor: color, fillOpacity: hollow ? 0 : 0.85
+    }).addTo(map)
+      .bindTooltip(escapeHtml(v.name))
+      .bindPopup(popupHtml(v, shows), { maxWidth: 300 });
+  });
+  if (points.length > 1) {
+    map.fitBounds(points, { padding: [30, 30] });
+  } else if (points.length === 1) {
+    map.setView(points[0], 12);
+  } else {
+    map.setView([22.97, 78.65], 5);  // India
+  }
+})();
+</script>
+</body>
+</html>

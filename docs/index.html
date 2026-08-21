@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>PVR INOX Radar</title>
+<meta name="description" content="A Claude Code skill for the PVR INOX chain: ask in plain English, get one map with showtimes, verified seats together, and drive times.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Instrument+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+:root {
+  /* The hall in the dark. The green is #76BE43: PVR's own "Available"
+     status color, taken verbatim from the API. */
+  --hall: #10131a; --panel: #161a23; --line: #262c39;
+  --glow: #ece7da; --dim: #9aa0b0; --faint: #6a7080;
+  --seat: #76be43; --sold: #2a303c;
+  --display: "Bodoni Moda", Didot, "Bodoni MT", serif;
+  --body: "Instrument Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Spline Sans Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+body { margin: 0; background: var(--hall); color: var(--glow);
+       font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased;
+       background-image: radial-gradient(100rem 48rem at 50% -24rem,
+         rgba(236, 231, 218, 0.05), transparent 65%); }
+.wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+a { color: var(--glow); }
+:focus-visible { outline: 2px solid var(--seat); outline-offset: 3px;
+                 border-radius: 4px; }
+.eyebrow { font: 500 11px/1 var(--mono); letter-spacing: 0.24em;
+           text-transform: uppercase; color: var(--dim); }
+.screenword.eyebrow { color: var(--faint); }
+header { padding: 64px 0 0; }
+h1 { font-family: var(--display); font-weight: 400; font-size: 58px;
+     line-height: 1.06; letter-spacing: 0.005em; margin: 20px 0 18px;
+     max-width: 14em; text-wrap: balance; }
+.lede { font-size: 17.5px; color: var(--dim); max-width: 37em;
+        margin: 0 0 28px; }
+.lede strong { color: var(--glow); font-weight: 500; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.cmd { display: flex; align-items: center; gap: 14px;
+       background: var(--panel); border: 1px solid var(--line);
+       border-radius: 10px; padding: 12px 16px;
+       font: 500 13.5px/1 var(--mono); }
+.cmd .dollar { color: var(--seat); user-select: none; }
+.cmd button { border: 1px solid var(--line); background: transparent;
+              color: var(--dim); border-radius: 7px; padding: 4px 12px;
+              font: 12px var(--body); cursor: pointer; }
+.cmd button:hover { color: var(--glow); border-color: var(--dim); }
+.btn { display: inline-block; padding: 11px 22px; border-radius: 10px;
+       text-decoration: none; font-weight: 600; font-size: 14px;
+       border: 1px solid var(--line); color: var(--glow); }
+.btn:hover { border-color: var(--dim); }
+
+/* The signature: a real auditorium from a captured seat map. */
+.hall { margin: 64px 0 8px; }
+.screenline { width: min(560px, 82%); margin: 0 auto 8px; height: 26px;
+              border: solid var(--faint); border-width: 2px 0 0;
+              border-radius: 100% 100% 0 0 / 220% 220% 0 0; opacity: 0.55; }
+.screenword { text-align: center; margin: 0 0 30px; }
+.grid { display: grid; justify-content: center; gap: 7px; }
+.g-row { display: grid; grid-auto-flow: column; gap: 7px;
+         align-items: center; }
+.g-row.tiergap { margin-top: 10px; }
+.rl { font: 400 10px/1 var(--mono); color: var(--faint); width: 18px;
+      text-align: right; padding-right: 4px; }
+.seat { width: clamp(13px, 2.6vw, 21px); height: clamp(13px, 2.6vw, 21px);
+        border-radius: 4px 4px 5px 5px; }
+.seat.free { border: 1.5px solid rgba(118, 190, 67, 0.34); }
+.seat.sold { background: var(--sold); }
+.seat.aisle { visibility: hidden; }
+.seat.pick { background: var(--seat); border-color: var(--seat);
+             box-shadow: 0 0 18px rgba(118, 190, 67, 0.55); }
+.hall-cap { text-align: center; margin: 26px 0 0;
+            font: 400 12.5px/1.8 var(--mono); color: var(--dim); }
+.hall-cap .verdict { color: var(--seat); }
+.hall-note { text-align: center; font-size: 12.5px; color: var(--faint);
+             margin: 6px 0 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .g-row { opacity: 0; animation: rowin 0.5s ease-out forwards; }
+  .seat.pick { animation: pickin 0.6s ease-out backwards; animation-delay: 1.5s; }
+  .hall-cap, .hall-note { opacity: 0; animation: rowin 0.7s ease-out forwards;
+                          animation-delay: 1.7s; }
+  @keyframes rowin { to { opacity: 1; } }
+  @keyframes pickin { from { background: transparent; box-shadow: none; } }
+}
+
+h2 { font-family: var(--display); font-weight: 400; font-size: 30px;
+     letter-spacing: 0.005em; margin: 0 0 16px; }
+section { padding: 58px 0 0; }
+.sec-eyebrow { margin-bottom: 10px; }
+
+.shot { display: block; border-radius: 12px; border: 1px solid var(--line);
+        overflow: hidden; background: #fff;
+        box-shadow: 0 0 0 1px rgba(236, 231, 218, 0.04),
+                    0 6px 60px rgba(236, 231, 218, 0.13),
+                    0 2px 16px rgba(0, 0, 0, 0.5); }
+.shot img { display: block; width: 100%; }
+.shot-cap { font-size: 13px; color: var(--dim); margin-top: 12px; }
+
+.asks { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none;
+        max-width: 44em; }
+.asks li { border: 1px solid var(--line); border-radius: 10px;
+           padding: 13px 18px; font-family: var(--display);
+           font-size: 18.5px; line-height: 1.4; color: var(--glow); }
+.asks li::before { content: "\201C"; color: var(--faint); }
+.asks li::after { content: "\201D"; color: var(--faint); }
+
+.gets { padding: 0; list-style: none; max-width: 44em; margin: 0; }
+.gets li { padding: 10px 0 10px 30px; position: relative; color: var(--dim);
+           border-bottom: 1px solid var(--line); }
+.gets li:last-child { border-bottom: 0; }
+.gets li::before { content: ""; position: absolute; left: 4px; top: 19px;
+                   width: 11px; height: 11px; border-radius: 3px;
+                   border: 1.5px solid rgba(118, 190, 67, 0.55); }
+.gets li strong { color: var(--glow); font-weight: 500; }
+
+pre { background: var(--panel); border: 1px solid var(--line);
+      color: var(--glow); border-radius: 10px; padding: 15px 74px 15px 18px;
+      font: 400 13px/1.75 var(--mono); overflow-x: auto;
+      position: relative; margin: 12px 0; }
+pre .cm { color: var(--faint); }
+.copy { position: absolute; top: 10px; right: 10px;
+        border: 1px solid var(--line); background: var(--hall);
+        color: var(--dim); border-radius: 7px; padding: 3px 12px;
+        font: 12px var(--body); cursor: pointer; }
+.copy:hover { color: var(--glow); border-color: var(--dim); }
+.plain { color: var(--dim); font-size: 14.5px; max-width: 44em; }
+
+.note { border: 1px solid var(--line); border-radius: 12px;
+        padding: 6px 22px; font-size: 14.5px; color: var(--dim);
+        max-width: 46em; }
+.note strong { color: var(--glow); font-weight: 500; }
+.note a { color: var(--glow); }
+
+footer { margin-top: 72px; padding: 24px 0 52px;
+         border-top: 1px solid var(--line); color: var(--faint);
+         font-size: 13px; }
+footer a { color: var(--dim); }
+@media (max-width: 640px) {
+  h1 { font-size: 38px; }
+  header { padding-top: 42px; }
+  .cmd { font-size: 12px; flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">PVR INOX Radar &middot; a Claude Code skill</div>
+  <h1>Four seats together. Twelve minutes away.</h1>
+  <p class="lede">Ask in plain English. The skill reads live showtimes and
+  seat maps across the <strong>PVR INOX</strong> chain, checks drive times
+  from where you are, and hands you one map to decide from.
+  <strong>Read-only</strong>: you book on pvrcinemas.com.</p>
+  <div class="hero-cta">
+    <div class="cmd" id="c0"><span class="dollar">$</span>npx skills add
+    karanb192/pvr-inox-radar<button class="copy-inline" data-cmd="npx skills add karanb192/pvr-inox-radar">copy</button></div>
+    <a class="btn" href="https://github.com/karanb192/pvr-inox-radar">GitHub</a>
+    <a class="btn" href="demo.html">See a real run</a>
+  </div>
+</header>
+
+<div class="hall" aria-label="A seat map from a real capture: rows J and K sold out, four seats found together in row F">
+  <div class="screenline" aria-hidden="true"></div>
+  <div class="screenword eyebrow" aria-hidden="true">screen</div>
+  <div class="grid" id="grid" aria-hidden="true"></div>
+  <p class="hall-cap">AUDI capture, 21 Aug 2026 &middot; row F &middot;
+  <span class="verdict">4 together: yes (best run 12)</span></p>
+  <p class="hall-note">A real hall from the test fixtures. The green is
+  #76BE43, PVR's own "Available" color, straight from the API. Rows J and K:
+  sold, or never released.</p>
+</div>
+
+<section>
+  <div class="eyebrow sec-eyebrow">A real run</div>
+  <h2>The map it hands back</h2>
+  <a class="shot" href="demo.html"><img src="assets/demo.jpg"
+    alt="A generated map: Awarapan on Saturday evening, 2 seats together, within 6 km of Gurgaon city centre, with three verified venues and drive times"></a>
+  <div class="shot-cap">Awarapan, Saturday evening, 2 together, within 6 km
+  of Gurgaon city centre. Every row links into PVR's seat picker.
+  <a href="demo.html">Open the interactive version</a>.</div>
+</section>
+
+<section>
+  <div class="eyebrow sec-eyebrow">Ask</div>
+  <h2>Things you can say to Claude</h2>
+  <ul class="asks">
+    <li>Dune, IMAX, Saturday night, 4 seats together, under 30 minutes from
+    Indiranagar</li>
+    <li>Which show of Awarapan 2 tonight can seat 6 of us together?</li>
+    <li>Is Friday booking open yet at PVR Priya, and how full is the 9 PM?</li>
+    <li>All films tomorrow evening within 6 km of Koramangala</li>
+  </ul>
+</section>
+
+<section>
+  <div class="eyebrow sec-eyebrow">Answer</div>
+  <h2>What comes back</h2>
+  <ul class="gets">
+    <li><strong>One self-contained HTML map.</strong> Venue pins colored by
+    availability, your location marked, everything within your travel
+    budget.</li>
+    <li><strong>Exact seat counts</strong> for the shortlisted shows, read
+    from the live seat map: "2 together: yes (best run 10)", not a vague
+    label.</li>
+    <li><strong>Drive-time estimates</strong> per venue: OSRM when
+    reachable, honest heuristics when not, always labeled.</li>
+    <li><strong>A book link per show</strong> that lands directly on that
+    show's seat picker on pvrcinemas.com.</li>
+    <li><strong>A plain table under the map</strong> with the full answer,
+    so the page works with no JavaScript and no tiles.</li>
+  </ul>
+</section>
+
+<section>
+  <div class="eyebrow sec-eyebrow">Tickets</div>
+  <h2>Install</h2>
+  <pre id="i1"><span class="cm"># Inside Claude Code</span>
+/plugin marketplace add karanb192/pvr-inox-radar
+/plugin install pvr-inox-radar@pvr-inox-radar<button class="copy" data-for="i1">copy</button></pre>
+  <pre id="i2"><span class="cm"># skills.sh one-liner (Claude Code, Codex, Cursor, Gemini and other agents)</span>
+npx skills add karanb192/pvr-inox-radar<button class="copy" data-for="i2">copy</button></pre>
+  <pre id="i3"><span class="cm"># Review-first: clone, read it, install the bytes you just read</span>
+git clone https://github.com/karanb192/pvr-inox-radar.git
+cd pvr-inox-radar && ./install.sh<button class="copy" data-for="i3">copy</button></pre>
+  <p class="plain">Python 3.9+ standard library only. No pip, no npm
+  packages, no API key, no login.</p>
+</section>
+
+<section>
+  <div class="eyebrow sec-eyebrow">The fine print, honestly</div>
+  <h2>Scope and credit</h2>
+  <div class="note">
+    <p><strong>Read-only, personal use.</strong> The skill reads the same
+    JSON the PVR INOX website uses, politely paced, and never books, holds
+    seats, or touches payment. Scope is the merged PVR INOX chain (about
+    116 Indian cities); other chains and BookMyShow listings are out of
+    scope.</p>
+    <p><strong>Worth knowing.</strong> PVR withholds some seat rows and
+    releases them later, so a show that reads sold out may simply not be
+    on sale yet. Counted seats are a floor, not a ceiling.</p>
+  </div>
+</section>
+
+<footer>
+  MIT licensed. Built by <a href="https://karanbansal.in">Karan Bansal</a>.
+  Client adapted from
+  <a href="https://github.com/notprashanth/pvr-inox-mcp">pvr-inox-mcp</a>
+  (MIT). Map data (c) OpenStreetMap contributors.
+  <a href="https://github.com/karanb192/pvr-inox-radar">Source on GitHub</a>.
+</footer>
+
+</div>
+<script>
+// A real capture: seatlayout fixture 53697, cells flipped to left-to-right.
+// _ aisle, O free, x sold. Tier breaks after D, E, G (Classic, Xtra
+// Legroom, Classic, Superior).
+var HALL = [
+  ["A", "___OOOOOOOOOOOO___", 0], ["B", "___OOOOOOOOOOOO___", 0],
+  ["C", "___OOOOOOOOOOOO___", 0], ["D", "___OOOOOOOOOOOO___", 0],
+  ["E", "___OOOOOOOOOOOO___", 1], ["F", "___OOOOOOOOOOOO___", 1],
+  ["G", "___OOOOOOOOOOOO___", 0], ["H", "___OOOOOOOOOOOO___", 1],
+  ["J", "xxxxxxxxxxxxxxx___", 0], ["K", "xxxxxxxxxxxxxxx___", 0],
+  ["L", "__OOOOOOOOOOOOO___", 0], ["M", "__OOOOOOOO__OOOOO_", 0]
+];
+var PICK = { row: "F", from: 7, to: 10 };  // 4 together, centre of F
+var grid = document.getElementById("grid");
+HALL.forEach(function (row, ri) {
+  var el = document.createElement("div");
+  el.className = "g-row" + (row[2] ? " tiergap" : "");
+  el.style.animationDelay = (ri * 0.09) + "s";
+  var rl = document.createElement("span");
+  rl.className = "rl"; rl.textContent = row[0];
+  el.appendChild(rl);
+  row[1].split("").forEach(function (ch, ci) {
+    var s = document.createElement("span");
+    s.className = "seat " + (ch === "O" ? "free" : ch === "x" ? "sold"
+                             : "aisle");
+    if (row[0] === PICK.row && ci >= PICK.from && ci <= PICK.to &&
+        ch === "O") { s.className = "seat free pick"; }
+    el.appendChild(s);
+  });
+  grid.appendChild(el);
+});
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(function () {
+    btn.textContent = "copied";
+    setTimeout(function () { btn.textContent = "copy"; }, 1500);
+  });
+}
+document.querySelectorAll(".copy").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var pre = document.getElementById(b.dataset.for).cloneNode(true);
+    pre.querySelector(".copy").remove();
+    copyText(pre.textContent.trim(), b);
+  });
+});
+document.querySelectorAll(".copy-inline").forEach(function (b) {
+  b.addEventListener("click", function () { copyText(b.dataset.cmd, b); });
+});
+</script>
+</body>
+</html>

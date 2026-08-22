@@ -457,6 +457,10 @@ footer { color: var(--sub); font-size: 11.5px; line-height: 1.6;
 .popup-dist { color: var(--sub); font-size: 12px; margin-bottom: 6px; }
 .leaflet-popup-content { margin: 12px 14px; max-width: 280px;
                          font-family: var(--sans); }
+/* Leaflet's own ".leaflet-container a" outranks ".chip", turning chip
+   text link-blue on green. Win specificity explicitly. */
+.leaflet-popup-content a.chip,
+.leaflet-popup-content a.chip:visited { color: #ffffff; }
 .leaflet-popup-content-wrapper { border-radius: 12px; }
 .leaflet-container { font-family: var(--sans); }
 img { max-width: 100%%; }
@@ -504,6 +508,14 @@ SCRIPT = """
   }
   function chipHtml(s) {
     var bits = [escapeHtml(s.showTime || "?")];
+    // Without a movie filter, chips at one venue span films: name each.
+    if (!q.movie) {
+      var title = String(s.film || "").split(" (")[0].trim();
+      if (title) {
+        bits.unshift(escapeHtml(
+          title.length > 18 ? title.slice(0, 16) + "\\u2026" : title));
+      }
+    }
     var fmt = s.screenType || s.movieFormat;
     if (fmt) { bits.push(escapeHtml(fmt)); }
     bits.push(escapeHtml(seatsBadge(s)));

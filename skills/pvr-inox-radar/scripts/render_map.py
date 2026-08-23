@@ -118,7 +118,7 @@ def seats_cell(show, party):
             return "%d together: yes (best run %d)" % (party, seats["best_run"])
         return "%d free, best run %d" % (seats["free"], seats["best_run"])
     if seats.get("hall_meets_party_size"):
-        return ("%d together: zone full, hall yes (run %d)"
+        return ("%d together: good rows full, fits elsewhere in hall (run %d)"
                 % (party, seats["hall_best_run"]))
     return "%d together: no (best run %d)" % (party, seats["best_run"])
 
@@ -227,9 +227,12 @@ def fallback_table(radar, ratings=None):
         km = venue.get("distance_km")
         drive = venue.get("drive_min_est")
         tokens = []
+        seen = set()
         for part in (show.get("screenType"), show.get("movieFormat")):
             for word in str(part or "").split():
-                if word not in tokens:
+                # case-insensitive: "Atmos" + "ATMOS" is one format, not two
+                if word.casefold() not in seen:
+                    seen.add(word.casefold())
                     tokens.append(word)
         # No format data means an empty cell, not an invented "2D": the API
         # left it blank and this page does not guess.
@@ -328,13 +331,20 @@ def stats_strip(radar):
     if not venues:
         return ""
     verified = sum(1 for s in shows if s.get("seats"))
+    films = {str(s.get("film") or "").strip().casefold()
+             for s in shows if str(s.get("film") or "").strip()}
     drives = [v.get("drive_min_est") for v in venues
               if v.get("drive_min_est") is not None]
     items = [
         ("%d" % len(venues), "venue" if len(venues) == 1 else "venues"),
         ("%d" % len(shows), "show" if len(shows) == 1 else "shows"),
-        ("%d" % verified, "seat-verified"),
     ]
+    # An advance-sale date can be 30 shows of ONE film; the films count is
+    # what makes that legible from the header instead of a table scroll.
+    if films:
+        items.append(("%d" % len(films),
+                      "film" if len(films) == 1 else "films"))
+    items.append(("%d" % verified, "seat-verified"))
     if drives:
         items.append(("%d min" % min(drives), "closest drive"))
     cells = "".join(
@@ -491,7 +501,7 @@ SCRIPT = """
     if (s.seats.meets_party_size) {
       return party > 1 ? party + " together" : s.seats.best_run + " in a row";
     }
-    if (s.seats.hall_meets_party_size) { return "zone full"; }
+    if (s.seats.hall_meets_party_size) { return "good rows full · fits elsewhere"; }
     return "no " + party + " together";
   }
   function chipClass(s) {
@@ -616,9 +626,11 @@ SCRIPT = """
     if (v.drive_min_est != null) {
       label += " \\u00b7 " + v.drive_min_est + " min";
     }
-    // Alternate label sides so venues sharing a mall do not stack their
-    // labels on the same pixel.
-    var side = index %% 2 === 0 ? "right" : "left";
+    // Cycle four label directions so dense metro clusters (12+ venues in
+    // Mumbai) collide far less than the old left/right alternation did.
+    var SIDES = [["right", [10, 0]], ["left", [-10, 0]],
+                 ["top", [0, -12]], ["bottom", [0, 12]]];
+    var pick = SIDES[index %% 4];
     L.circleMarker(at, {
       radius: 9, color: hollow ? color : "#ffffff",
       weight: hollow ? 2 : 2.5,
@@ -626,8 +638,8 @@ SCRIPT = """
       fillColor: color, fillOpacity: hollow ? 0 : 1
     }).addTo(map)
       .bindTooltip(escapeHtml(label),
-                   { permanent: true, direction: side,
-                     offset: [side === "right" ? 10 : -10, 0],
+                   { permanent: true, direction: pick[0],
+                     offset: pick[1],
                      className: "venue-label" })
       .bindPopup(popupHtml(v, shows), { maxWidth: 300 });
   });
@@ -688,6 +700,13 @@ def render(radar, ratings=None):
         '<li><span class="chipdemo chip-verified ok" '
         'style="background:%s">06:05 PM</span>'
         "solid: seats counted from the live seat map</li>"
+        '<li><span class="chipdemo chip-verified warn" '
+        'style="background:%s">06:00 PM</span>'
+        "solid brown: counted too; the good rows can't seat your party "
+        "together, but other rows in the hall can</li>"
+        '<li><span class="chipdemo chip-verified full" '
+        'style="background:%s">10:15 PM</span>'
+        "solid red: counted; this hall cannot seat your party together</li>"
         '<li><span class="chipdemo chip-unverified" '
         'style="background:%s;border:1px dashed #4b5563">9:00 PM '
         "· ?</span>dashed with a ? : PVR's own label, not verified</li>"
@@ -695,7 +714,8 @@ def render(radar, ratings=None):
         "</div>"
         "<div>Note: %s.</div>"
         "</section>" % (INK["ok"], INK["warn"], INK["full"], INK["muted"],
-                        INK["ok"], INK["muted"], esc(LEGEND_LINE)))
+                        INK["ok"], INK["warn"], INK["full"], INK["muted"],
+                        esc(LEGEND_LINE)))
 
     parts = [
         "<!DOCTYPE html>",

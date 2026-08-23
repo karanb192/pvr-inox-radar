@@ -1,0 +1,470 @@
+{
+ "query": {
+  "city": "Gurugram",
+  "movie": "Awarapan",
+  "format": null,
+  "date": "2026-08-22",
+  "time_from": "18:00",
+  "time_to": "23:59",
+  "party_size": 2,
+  "max_km": 6.0,
+  "limit": 40,
+  "seat_detail": 3,
+  "no_osrm": false,
+  "fixtures": null,
+  "origin": {
+   "lat": 28.4595,
+   "lng": 77.0266,
+   "label": "Gurgaon city centre",
+   "source": "caller"
+  },
+  "generated_at": "2026-08-21T10:35:33+05:30"
+ },
+ "venues": [
+  {
+   "theatreId": "241",
+   "name": "INOX Ardee Mall, Gurugram",
+   "lat": "28.44507629",
+   "lng": "77.08068787",
+   "distance_km": 5.5,
+   "distance_from": "caller",
+   "drive_min_est": 12,
+   "drive_min_source": "osrm",
+   "booking_open": true,
+   "best_status": "verified_ok",
+   "formats": [
+    "INSIGNIA"
+   ]
+  },
+  {
+   "theatreId": "439",
+   "name": "PVR City Centre Gurugram",
+   "lat": "28.479051",
+   "lng": "77.080736",
+   "distance_km": 5.7,
+   "distance_from": "caller",
+   "drive_min_est": 9,
+   "drive_min_source": "osrm",
+   "booking_open": true,
+   "best_status": "verified_ok",
+   "formats": [
+    "PREMIUM"
+   ]
+  },
+  {
+   "theatreId": "466",
+   "name": "HDFC Millennia PVR: MGF,  Gurugram",
+   "lat": "28.480838",
+   "lng": "77.080207",
+   "distance_km": 5.8,
+   "distance_from": "caller",
+   "drive_min_est": 9,
+   "drive_min_source": "osrm",
+   "booking_open": true,
+   "best_status": "verified_ok",
+   "formats": [
+    "PREMIUM"
+   ]
+  }
+ ],
+ "shows": [
+  {
+   "theatreId": "466",
+   "sessionId": 38837,
+   "film": "AWARAPAN 2 (HINDI ATMOS WITH ENGLISH SUBTITLE)",
+   "filmId": "33295",
+   "movieId": "38351",
+   "language": "Hindi",
+   "language_disputed": false,
+   "showTime": "06:05 PM",
+   "showTimeStamp": 1787402100000,
+   "screenName": "SCREEN 3",
+   "screenType": "",
+   "movieFormat": "ATMOS",
+   "soundFormat": "ATMOS",
+   "statusCode": "76BE43",
+   "status_category": "available",
+   "statusTxt": "Available",
+   "deep_link": "https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxtNnWZtLAlMVw==",
+   "time_unparsed": false,
+   "seats": {
+    "free": 202,
+    "sold": 20,
+    "held": 0,
+    "zone_free": 38,
+    "zone_rows_used": [
+     "H",
+     "J",
+     "K",
+     "L",
+     "M"
+    ],
+    "best_run": 10,
+    "best_where": "H9-H18",
+    "meets_party_size": true,
+    "widened_to": [],
+    "hall_free": 202,
+    "hall_best_run": 10,
+    "hall_meets_party_size": true,
+    "premium": false,
+    "price_tiers": [
+     {
+      "code": "BR-RECLINER ROWS",
+      "description": "RECLINER ROWS",
+      "price": "680.00",
+      "net": "576.26"
+     },
+     {
+      "code": "QR-PRIME ROWS",
+      "description": "PRIME ROWS",
+      "price": "510.00",
+      "net": "432.20"
+     },
+     {
+      "code": "CR-CLASSIC ROWS",
+      "description": "CLASSIC ROWS",
+      "price": "400.00",
+      "net": "338.98"
+     }
+    ],
+    "verified": true
+   },
+   "seat_error": null,
+   "rank": 1
+  },
+  {
+   "theatreId": "241",
+   "sessionId": 45377,
+   "film": "AWARAPAN 2 (HINDI ATMOS WITH ENGLISH SUBTITLE)",
+   "filmId": "33295",
+   "movieId": "38351",
+   "language": "Hindi",
+   "language_disputed": false,
+   "showTime": "08:00 PM",
+   "showTimeStamp": 1787409000000,
+   "screenName": "INSIGNIA 1",
+   "screenType": "INSIGNIA",
+   "movieFormat": "ATMOS",
+   "soundFormat": "ATMOS",
+   "statusCode": "76BE43",
+   "status_category": "available",
+   "statusTxt": "Available",
+   "deep_link": "https://www.pvrcinemas.com/seatlayout/3bUFfs(dglOe1a98BReXZw==",
+   "time_unparsed": false,
+   "seats": {
+    "free": 22,
+    "sold": 8,
+    "held": 0,
+    "zone_free": 10,
+    "zone_rows_used": [
+     "B",
+     "A"
+    ],
+    "best_run": 6,
+    "best_where": "A1-A6",
+    "meets_party_size": true,
+    "widened_to": [],
+    "hall_free": 22,
+    "hall_best_run": 6,
+    "hall_meets_party_size": true,
+    "premium": true,
+    "price_tiers": [
+     {
+      "code": "RP-RECLINER PRIME",
+      "description": "RECLINER PRIME",
+      "price": "950.00",
+      "net": "805.08"
+     },
+     {
+      "code": "RE-RECLINER",
+      "description": "RECLINER",
+      "price": "750.00",
+      "net": "635.58"
+     }
+    ],
+    "verified": true
+   },
+   "seat_error": null,
+   "rank": 2
+  },
+  {
+   "theatreId": "439",
+   "sessionId": 16620,
+   "film": "AWARAPAN 2 (HINDI)",
+   "filmId": "33295",
+   "movieId": "33295",
+   "language": "Hindi",
+   "language_disputed": false,
+   "showTime": "08:00 PM",
+   "showTimeStamp": 1787409000000,
+   "screenName": "SCREEN 1",
+   "screenType": "",
+   "movieFormat": "",
+   "soundFormat": "",
+   "statusCode": "76BE43",
+   "status_category": "available",
+   "statusTxt": "Available",
+   "deep_link": "https://www.pvrcinemas.com/seatlayout/ixqn9)O5i(QVWuaA4b4d9w==",
+   "time_unparsed": false,
+   "seats": {
+    "free": 286,
+    "sold": 24,
+    "held": 0,
+    "zone_free": 30,
+    "zone_rows_used": [
+     "J",
+     "K",
+     "L",
+     "M"
+    ],
+    "best_run": 10,
+    "best_where": "J1-J10",
+    "meets_party_size": true,
+    "widened_to": [],
+    "hall_free": 286,
+    "hall_best_run": 13,
+    "hall_meets_party_size": true,
+    "premium": false,
+    "price_tiers": [
+     {
+      "code": "BR-RECLINER ROWS",
+      "description": "RECLINER ROWS",
+      "price": "650.00",
+      "net": "550.84"
+     },
+     {
+      "code": "OR-EXTRA LEGROOM ROWS",
+      "description": "EXTRA LEGROOM ROWS",
+      "price": "470.00",
+      "net": "398.30"
+     },
+     {
+      "code": "QR-PRIME ROWS",
+      "description": "PRIME ROWS",
+      "price": "450.00",
+      "net": "381.36"
+     },
+     {
+      "code": "CR-CLASSIC ROWS",
+      "description": "CLASSIC ROWS",
+      "price": "370.00",
+      "net": "313.56"
+     }
+    ],
+    "verified": true
+   },
+   "seat_error": null,
+   "rank": 3
+  },
+  {
+   "theatreId": "466",
+   "sessionId": 38838,
+   "film": "AWARAPAN 2 (HINDI ATMOS)",
+   "filmId": "33295",
+   "movieId": "38349",
+   "language": "Hindi",
+   "language_disputed": false,
+   "showTime": "09:00 PM",
+   "showTimeStamp": 1787412600000,
+   "screenName": "SCREEN 3",
+   "screenType": "",
+   "movieFormat": "ATMOS",
+   "soundFormat": "ATMOS",
+   "statusCode": "76BE43",
+   "status_category": "available",
+   "statusTxt": "Available",
+   "deep_link": "https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxs8ChRWNL09eg==",
+   "time_unparsed": false,
+   "seats": null,
+   "seat_error": null,
+   "rank": 4
+  },
+  {
+   "theatreId": "466",
+   "sessionId": 38864,
+   "film": "AWARAPAN 2 (HINDI)",
+   "filmId": "33295",
+   "movieId": "33295",
+   "language": "Hindi",
+   "language_disputed": false,
+   "showTime": "10:30 PM",
+   "showTimeStamp": 1787418000000,
+   "screenName": "SCREEN 5",
+   "screenType": "",
+   "movieFormat": "",
+   "soundFormat": "",
+   "statusCode": "76BE43",
+   "status_category": "available",
+   "statusTxt": "Available",
+   "deep_link": "https://www.pvrcinemas.com/seatlayout/(nn4xEO)6fePr2VpF8Iaeg==",
+   "time_unparsed": false,
+   "seats": null,
+   "seat_error": null,
+   "rank": 5
+  },
+  {
+   "theatreId": "241",
+   "sessionId": 45378,
+   "film": "AWARAPAN 2 (HINDI ATMOS)",
+   "filmId": "33295",
+   "movieId": "38349",
+   "language": "Hindi",
+   "language_disputed": false,
+   "showTime": "10:55 PM",
+   "showTimeStamp": 1787419500000,
+   "screenName": "INSIGNIA 1",
+   "screenType": "INSIGNIA",
+   "movieFormat": "ATMOS",
+   "soundFormat": "ATMOS",
+   "statusCode": "76BE43",
+   "status_category": "available",
+   "statusTxt": "Available",
+   "deep_link": "https://www.pvrcinemas.com/seatlayout/3bUFfs(dglNjJXJEqstxeA==",
+   "time_unparsed": false,
+   "seats": null,
+   "seat_error": null,
+   "rank": 6
+  },
+  {
+   "theatreId": "439",
+   "sessionId": 16621,
+   "film": "AWARAPAN 2 (HINDI)",
+   "filmId": "33295",
+   "movieId": "33295",
+   "language": "Hindi",
+   "language_disputed": false,
+   "showTime": "10:55 PM",
+   "showTimeStamp": 1787419500000,
+   "screenName": "SCREEN 1",
+   "screenType": "",
+   "movieFormat": "",
+   "soundFormat": "",
+   "statusCode": "76BE43",
+   "status_category": "available",
+   "statusTxt": "Available",
+   "deep_link": "https://www.pvrcinemas.com/seatlayout/ixqn9)O5i(RRIuks4WTY2A==",
+   "time_unparsed": false,
+   "seats": null,
+   "seat_error": null,
+   "rank": 7
+  },
+  {
+   "theatreId": "466",
+   "sessionId": 38839,
+   "film": "AWARAPAN 2 (HINDI ATMOS)",
+   "filmId": "33295",
+   "movieId": "38349",
+   "language": "Hindi",
+   "language_disputed": false,
+   "showTime": "11:55 PM",
+   "showTimeStamp": 1787423100000,
+   "screenName": "SCREEN 3",
+   "screenType": "",
+   "movieFormat": "ATMOS",
+   "soundFormat": "ATMOS",
+   "statusCode": "76BE43",
+   "status_category": "available",
+   "statusTxt": "Available",
+   "deep_link": "https://www.pvrcinemas.com/seatlayout/Z4tr7NFQNxtB00AD2CZlRQ==",
+   "time_unparsed": false,
+   "seats": null,
+   "seat_error": null,
+   "rank": 8
+  }
+ ],
+ "meta": {
+  "calls_made": 9,
+  "source": "live",
+  "cinemas_queried": [
+   {
+    "theatreId": "241",
+    "name": "INOX Ardee Mall, Gurugram",
+    "outcome": "open",
+    "error": null,
+    "shows_matched": 2
+   },
+   {
+    "theatreId": "439",
+    "name": "PVR City Centre Gurugram",
+    "outcome": "open",
+    "error": null,
+    "shows_matched": 2
+   },
+   {
+    "theatreId": "466",
+    "name": "HDFC Millennia PVR: MGF,  Gurugram",
+    "outcome": "open",
+    "error": null,
+    "shows_matched": 4
+   }
+  ],
+  "cinemas_skipped": [
+   {
+    "theatreId": "485",
+    "name": "PVR Mega Mall Gurugram",
+    "reason": "outside radius (6.8 km > 6 km)"
+   },
+   {
+    "theatreId": "572",
+    "name": "PVR Elan Miracle, Sec 84, Gurugram",
+    "reason": "outside radius (7.9 km > 6 km)"
+   },
+   {
+    "theatreId": "283",
+    "name": "INOX AIPL Joy Street Mall Gurugram",
+    "reason": "outside radius (8.1 km > 6 km)"
+   },
+   {
+    "theatreId": "293",
+    "name": "INOX World Mark, Gurugram",
+    "reason": "outside radius (8.2 km > 6 km)"
+   },
+   {
+    "theatreId": "366",
+    "name": "Gurugram: PVR Directors Cut Ambience Mall",
+    "reason": "outside radius (8.5 km > 6 km)"
+   },
+   {
+    "theatreId": "470",
+    "name": "Gurugram Pepsi PVR Ambience",
+    "reason": "outside radius (8.5 km > 6 km)"
+   },
+   {
+    "theatreId": "445",
+    "name": "PVR Elan Town Centre, Sec 67, Gurugram",
+    "reason": "outside radius (8.7 km > 6 km)"
+   },
+   {
+    "theatreId": "234",
+    "name": "INOX Sapphire 83 Gurugram",
+    "reason": "outside radius (9.4 km > 6 km)"
+   },
+   {
+    "theatreId": "460",
+    "name": "INOX IRIS Broadway Gurugram",
+    "reason": "outside radius (9.9 km > 6 km)"
+   },
+   {
+    "theatreId": "269",
+    "name": "INOX Sapphire 90 Mall, Gurugram",
+    "reason": "outside radius (10.9 km > 6 km)"
+   },
+   {
+    "theatreId": "446",
+    "name": "PVR Elan Mercado, Sec 80, Gurugram",
+    "reason": "outside radius (11.3 km > 6 km)"
+   }
+  ],
+  "partial": false,
+  "booking_open": true,
+  "message": null,
+  "error": null,
+  "excluded_by_party": 0,
+  "relaxations_applied": [],
+  "caveats": [
+   "A withheld seat is indistinguishable from a sold one without seat history: PVR opens dates with rows withheld and releases them later (finding by notprashanth/pvr-inox-mcp, MIT).",
+   "Availability labels come from PVR and can lag in both directions (measured by notprashanth/pvr-inox-mcp); counted seats are exact at fetch time.",
+   "Drive times are estimates."
+  ]
+ }
+}

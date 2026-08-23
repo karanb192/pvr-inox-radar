@@ -149,6 +149,21 @@ class TestHonestEmptyStates(unittest.TestCase):
         self.assertIn("2 show(s) dropped", banner)
         self.assertIn("4 together", banner)
 
+    def test_format_words_dedupe_case_insensitively(self):
+        """Real capture 23 Aug 2026: screenType 'Atmos' + movieFormat
+        'ATMOS' rendered as 'Atmos ATMOS'. One format, one word."""
+        show = {"theatreId": "1", "sessionId": 5, "film": "AWARAPAN 2",
+                "showTime": "07:45 PM", "showTimeStamp": 1,
+                "screenType": "Atmos", "movieFormat": "ATMOS",
+                "soundFormat": "", "statusCode": "76BE43",
+                "status_category": "available", "statusTxt": "Available",
+                "deep_link": None, "time_unparsed": False, "seats": None,
+                "seat_error": None, "rank": 1}
+        table = render_map.fallback_table(
+            self.base_radar([self.venue("1", True)], [show]))
+        self.assertIn("Atmos", table)
+        self.assertNotIn("Atmos ATMOS", table)
+
     def test_unknown_format_left_blank_not_invented(self):
         show = {"theatreId": "1", "sessionId": 5, "film": "DUNE",
                 "showTime": "06:00 PM", "showTimeStamp": 1,
@@ -217,6 +232,99 @@ class TestEscaping(unittest.TestCase):
 
 
 
+class TestSeatVerdictWording(unittest.TestCase):
+    """A verified 'no good pair' must never read as sold out. First-user
+    receipt: a brown 'zone full' chip clicked through to PVR's page showing
+    open front-row recliners and read as a contradiction; the wording now
+    names the hall fallback in plain words everywhere it appears."""
+
+    def test_hall_yes_names_the_fallback_in_the_table(self):
+        show = {"seats": {"meets_party_size": False,
+                          "hall_meets_party_size": True,
+                          "hall_best_run": 3, "best_run": 1, "free": 5}}
+        text = render_map.seats_cell(show, 2)
+        self.assertIn("good rows full", text)
+        self.assertIn("fits elsewhere in hall", text)
+        self.assertNotIn("zone", text)
+
+    def test_hall_full_still_says_no_plainly(self):
+        show = {"seats": {"meets_party_size": False,
+                          "hall_meets_party_size": False,
+                          "best_run": 1, "free": 2}}
+        self.assertIn("no", render_map.seats_cell(show, 2))
+
+    def test_chip_badge_and_legend_tell_the_same_story(self):
+        page = render_map.render(context.load_asset("sample_radar.json"))
+        self.assertIn("good rows full · fits elsewhere", page)
+        self.assertIn("other rows in the hall can", page)
+        self.assertNotIn('"zone full"', page)
+
+
+class TestLegendCoversEveryChipState(unittest.TestCase):
+    """Every chip state the JS can emit is explained in the legend. The brown
+    'zone full' chip shipped without a legend entry once and a first user
+    read it as sold out; this pins the invariant, not just that instance."""
+
+    def test_every_js_chip_class_has_a_legend_demo(self):
+        page = render_map.render(context.load_asset("sample_radar.json"))
+        emitted = set(re.findall(r'return "chip (chip-[^"]+)"', page))
+        self.assertGreaterEqual(len(emitted), 4)
+        for cls in emitted:
+            self.assertIn("chipdemo %s" % cls, page, cls)
+
+
+class TestRealCaptureRender(unittest.TestCase):
+    """The renderer's honesty invariants hold on a REAL radar run (captured
+    21 Aug 2026, 3 venues / 8 shows / 3 verified), not only on authored
+    samples: verified and unverified stay countably distinct, every deep
+    link survives into both the chips and the table, and the page stays
+    clean (hosts, dashes) on live-shaped data."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.radar = context.load_fixture("radar_real_capture.json")
+        cls.page = render_map.render(cls.radar)
+
+    def test_verified_rows_match_shows_with_seat_data(self):
+        verified = sum(1 for s in self.radar["shows"] if s.get("seats"))
+        self.assertEqual(self.page.count("verified seat count"), verified)
+        self.assertEqual(self.page.count(">unverified<"),
+                         len(self.radar["shows"]) - verified)
+
+    def test_every_deep_link_survives_twice(self):
+        for show in self.radar["shows"]:
+            link = show.get("deep_link")
+            if link:
+                self.assertGreaterEqual(self.page.count(link), 2, link)
+
+    def test_every_venue_is_on_the_page(self):
+        for venue in self.radar["venues"]:
+            self.assertIn(str(venue["theatreId"]), self.page)
+
+    def test_real_page_stays_clean(self):
+        self.assertNotIn("\u2014", self.page)
+        self.assertNotIn("\u2013", self.page)
+        for url in set(re.findall(r"https?://[^\s\"'<>\\)]+", self.page)):
+            host = urllib.parse.urlparse(url).netloc
+            self.assertIn(host, ALLOWED_HOSTS, url)
+
+
+class TestSkillDescriptionRouting(unittest.TestCase):
+    """The SKILL.md description is what routes a user's ask to this skill;
+    a weak model skipped the skill on 'what recliners are available near me
+    tonight, cheapest first' (23 Aug 2026) because those words were missing.
+    Pin the routing vocabulary so an edit never drops it again."""
+
+    def test_description_carries_the_routing_phrases(self):
+        path = os.path.join(context.REPO_ROOT, "skills", "pvr-inox-radar",
+                            "SKILL.md")
+        with open(path) as fh:
+            frontmatter = fh.read().split("---")[1].lower()
+        for phrase in ("recliner", "cheapest", "seats together", "showtimes",
+                       "imax", "map", "tonight"):
+            self.assertIn(phrase, frontmatter, phrase)
+
+
 class TestMapLabels(unittest.TestCase):
     """The map labels venues and the origin without clicks, and fits every
     pin up front (SPEC-level UX asks from first-user feedback)."""
@@ -246,6 +354,37 @@ class TestMapLabels(unittest.TestCase):
     def test_short_name_logic_present(self):
         page = render_map.render(self.RADAR)
         self.assertIn("shortName", page)
+
+    def test_labels_cycle_four_directions(self):
+        """Dogfood 23 Aug 2026: Mumbai's 12-venue map collided labels with
+        only left/right alternation; four directions must stay wired."""
+        page = render_map.render(self.RADAR)
+        for side in ('"right"', '"left"', '"top"', '"bottom"'):
+            self.assertIn(side, page)
+
+
+class TestStatsStrip(unittest.TestCase):
+    """The films tile: 32 shows of ONE film (a real advance-sale date,
+    captured 23 Aug 2026 for Sat 29 Aug) must be legible from the header."""
+
+    def test_single_film_date_shows_film_count(self):
+        radar = TestHonestEmptyStates.base_radar(
+            [TestHonestEmptyStates.venue("1", True)], [])
+        radar["shows"] = [
+            {"theatreId": "1", "sessionId": i, "film": "TOXIC (HINDI)",
+             "showTime": "09:00 AM", "showTimeStamp": i, "screenType": "",
+             "movieFormat": "", "soundFormat": "", "statusCode": "76BE43",
+             "status_category": "available", "statusTxt": "Available",
+             "deep_link": None, "time_unparsed": False, "seats": None,
+             "seat_error": None, "rank": i} for i in range(3)]
+        strip = render_map.stats_strip(radar)
+        self.assertIn(">film<", strip)
+        self.assertIn(">3</div>", strip)
+
+    def test_no_shows_means_no_films_tile(self):
+        radar = TestHonestEmptyStates.base_radar(
+            [TestHonestEmptyStates.venue("1", True)], [])
+        self.assertNotIn("film", render_map.stats_strip(radar))
 
 
 if __name__ == "__main__":

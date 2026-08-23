@@ -3,8 +3,11 @@ name: pvr-inox-radar
 description: >-
   Find and map PVR INOX movie showtimes anywhere in India. Use when the user
   wants movie showtimes, PVR or INOX shows, IMAX near me, movie tickets on a
-  map, seats together for a group, or asks things like "Dune in IMAX Saturday
-  night, 4 seats together, under 30 minutes from Sector 56 Gurgaon". Renders
+  map, seats together for a group, recliners near me, cheapest recliner
+  seats, what to watch tonight, or asks things like "Dune in IMAX Saturday
+  night, 4 seats together, under 30 minutes from Sector 56 Gurgaon" or "what
+  recliners are available near me tonight, 2 seats together, cheapest
+  first". Renders
   one self-contained HTML map: cinemas as pins, showtime chips colored by
   availability, exact seats-together counts, travel-time labels, and every
   chip deep-linking into PVR's own seat-selection page. Read-only and

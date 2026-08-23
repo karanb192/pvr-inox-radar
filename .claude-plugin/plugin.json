@@ -2,12 +2,12 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "pvr-inox-radar",
   "displayName": "PVR INOX Radar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Movie showtimes across India on one HTML map: PVR INOX cinemas as pins, availability-colored showtime chips, seats-together counts, deep links into PVR's own booking flow.",
   "skills": ["./skills/pvr-inox-radar"],
   "author": { "name": "Karan Bansal", "url": "https://karanbansal.in" },
   "homepage": "https://github.com/karanb192/pvr-inox-radar",
   "repository": "https://github.com/karanb192/pvr-inox-radar",
   "license": "MIT",
-  "keywords": ["movies", "showtimes", "india", "pvr", "inox", "imax", "tickets", "map"]
+  "keywords": ["movies", "showtimes", "india", "pvr", "inox", "imax", "tickets", "map", "recliners", "seats"]
 }

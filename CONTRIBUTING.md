@@ -30,6 +30,13 @@ in CI.
 - **Tests or it did not happen.** New behavior ships with offline tests;
   fixture updates ship with the capture script change that produced them.
 
+## Releasing
+
+Any change under `skills/` or `.claude-plugin/` bumps `version` in
+`.claude-plugin/plugin.json` in the same commit. The version string is what
+tells an installed user's plugin manager an update exists; pushing new
+behavior without a bump strands existing installs on the old bytes.
+
 ## Good first contributions
 
 - New city quirks (rollups, coordless cities) with a fixture.

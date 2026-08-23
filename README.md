@@ -49,6 +49,13 @@ Run from a checkout, `install.sh` never touches the network: it copies the files
 
 Requirements: `python3` 3.9+ (stdlib only, zero pip installs).
 
+The Claude Code plugin also ships one UserPromptSubmit hook: on prompts that
+look like movie asks (keywords like movie, showtime, recliner, IMAX) it adds
+a single line of context naming this skill, so smaller models route to it
+reliably instead of answering from memory. It reads nothing but the prompt,
+sends nothing anywhere, and stays silent on all other prompts
+(`hooks/route.py`, 30 lines, read it).
+
 Then open your agent and ask: "Dune, IMAX, Saturday night, 4 seats together, under 30 min from Sector 56 Gurgaon".
 
 ## How it works

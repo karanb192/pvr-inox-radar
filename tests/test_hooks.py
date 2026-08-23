@@ -58,8 +58,8 @@ class TestRoutingHook(unittest.TestCase):
         proc = run_hook(json.dumps({"prompt": "movies tonight?"}))
         lines = [l for l in proc.stdout.splitlines() if l.strip()]
         self.assertEqual(len(lines), 1)
-        self.assertNotIn("—", proc.stdout)
-        self.assertNotIn("–", proc.stdout)
+        self.assertNotIn("\u2014", proc.stdout)
+        self.assertNotIn("\u2013", proc.stdout)
 
 
 class TestHooksManifest(unittest.TestCase):

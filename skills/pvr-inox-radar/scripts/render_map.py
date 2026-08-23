@@ -156,12 +156,12 @@ def rating_words(entry):
     return str(entry) if entry is not None else ""
 
 
-def price_words(seats):
-    """'from Rs 400' for a verified show, from its matched tier or the
-    cheapest hall tier; empty when unverified (csessions carries no
-    prices, so nothing is guessed)."""
+def price_value(seats):
+    """Cheapest verified per-ticket gross as a float, or None: the matched
+    tier first, else the cheapest hall tier. Feeds price_words and the
+    table's numeric sort key."""
     if not seats:
-        return ""
+        return None
     tier = seats.get("tier") or {}
     if tier.get("mode") in ("rows", "whole_hall") and tier.get("gross"):
         candidates = [tier["gross"]]
@@ -173,11 +173,32 @@ def price_words(seats):
             values.append(float(text))
         except (TypeError, ValueError):
             continue
-    if not values:
+    return min(values) if values else None
+
+
+def price_words(seats):
+    """'from Rs 400' for a verified show, from its matched tier or the
+    cheapest hall tier; empty when unverified (csessions carries no
+    prices, so nothing is guessed)."""
+    low = price_value(seats)
+    if low is None:
         return ""
-    low = min(values)
     text = ("%d" % low) if low == int(low) else ("%.2f" % low)
     return "from Rs %s" % text
+
+
+def seats_sort_value(show):
+    """Numeric sort key for the Seats column: counted-yes first, then
+    good-rows-full-hall-yes, then counted-no, then unverified; bigger free
+    runs sort earlier within each band."""
+    seats = show.get("seats")
+    if not seats:
+        return 3000
+    if seats.get("meets_party_size"):
+        return 0 - min(int(seats.get("best_run") or 0), 999)
+    if seats.get("hall_meets_party_size"):
+        return 1000 - min(int(seats.get("hall_best_run") or 0), 999)
+    return 2000 - min(int(seats.get("best_run") or 0), 999)
 
 
 def films_strip(radar, ratings=None):
@@ -214,15 +235,23 @@ def fallback_table(radar, ratings=None):
     venues = {v.get("theatreId"): v for v in radar.get("venues") or []}
     party = (radar.get("query") or {}).get("party_size") or 1
     ratings = {str(k).strip().lower(): v for k, v in (ratings or {}).items()}
-    rating_col = ("<th>Rating</th>" if ratings else "")
+    rating_col = ('<th data-key="rating" data-num="1">Rating</th>'
+                  if ratings else "")
     has_price = any(price_words(s.get("seats"))
                     for s in radar.get("shows") or [])
-    price_col = ("<th>Price</th>" if has_price else "")
-    head = ("<tr><th>Venue</th><th>Distance</th><th>Drive est.</th>"
-            "<th>Show</th>%s<th>Format</th><th>Status</th><th>Seats</th>"
+    price_col = ('<th data-key="price" data-num="1">Price</th>'
+                 if has_price else "")
+    head = ('<tr><th data-key="venue">Venue</th>'
+            '<th data-key="km" data-num="1">Distance</th>'
+            '<th data-key="drive" data-num="1">Drive est.</th>'
+            '<th data-key="t" data-num="1">Show</th>%s'
+            '<th data-key="fmt">Format</th>'
+            '<th data-key="status">Status</th>'
+            '<th data-key="seats" data-num="1">Seats</th>'
             "%s<th>Link</th></tr>" % (rating_col, price_col))
     rows = [head]
-    for show in radar.get("shows") or []:
+    for index, show in enumerate(radar.get("shows") or []):
+        entry = None
         venue = venues.get(show.get("theatreId")) or {}
         km = venue.get("distance_km")
         drive = venue.get("drive_min_est")
@@ -260,8 +289,37 @@ def fallback_table(radar, ratings=None):
         price_cell = ('<td class="num">%s</td>'
                       % esc(price_words(show.get("seats")))
                       if has_price else "")
+        # Row-level sort keys for the client-side header sorter; every
+        # value is derived and escaped, nothing user-controlled leaks in
+        # unescaped.
+        attrs = [
+            'data-i="%d"' % index,
+            'data-venue="%s"' % esc(
+                str(venue.get("name") or "").casefold()),
+            'data-km="%s"' % (("%.3f" % km) if km is not None else "999999"),
+            'data-drive="%s"' % (drive if drive is not None else "999999"),
+            'data-t="%s"' % (show.get("showTimeStamp") or "999999999999"),
+            'data-fmt="%s"' % esc(fmt.casefold()),
+            'data-status="%s"' % ("0 verified" if show.get("seats")
+                                  else esc("1 %s" % (
+                                      show.get("status_category")
+                                      or "unknown"))),
+            'data-seats="%d"' % seats_sort_value(show),
+        ]
+        if has_price:
+            value = price_value(show.get("seats"))
+            attrs.append('data-price="%s"'
+                         % (("%.2f" % value) if value is not None
+                            else "999999"))
+        if ratings:
+            try:
+                rating_num = float((entry or {}).get("rating") or "")
+            except ValueError:
+                rating_num = -1.0
+            attrs.append('data-rating="%s"' % rating_num)
         rows.append(
-            '<tr><td class="c-venue">%s</td><td class="num">%s</td>'
+            '<tr %s>' % " ".join(attrs) +
+            '<td class="c-venue">%s</td><td class="num">%s</td>'
             '<td class="num">%s</td><td>%s</td>%s<td class="c-fmt">%s</td>'
             '<td><span class="dot %s"></span>%s</td><td>%s</td>%s'
             '<td class="c-link">%s</td></tr>' % (
@@ -301,12 +359,21 @@ def fallback_table(radar, ratings=None):
         if len(rows) == 1:
             rows.append('<tr><td colspan="%d">no shows matched</td></tr>'
                         % (8 + (1 if ratings else 0)))
-    return "<table>%s</table>" % "".join(rows)
+    note = ""
+    if radar.get("shows"):
+        order = ("cheapest verified first, unpriced after in time order"
+                 if (radar.get("query") or {}).get("sort") == "cheapest"
+                 else "soonest show first, then nearest venue")
+        note = ('<p class="table-note">Order: %s. Click a column header to '
+                're-sort; a third click restores this order.</p>'
+                % esc(order))
+    return note + "<table>%s</table>" % "".join(rows)
 
 
 def notice_banner(radar):
     meta = radar.get("meta") or {}
-    party = (radar.get("query") or {}).get("party_size") or 1
+    query = radar.get("query") or {}
+    party = query.get("party_size") or 1
     notes = []
     if meta.get("partial"):
         notes.append("Partial results: the run stopped early (%s)."
@@ -318,6 +385,27 @@ def notice_banner(radar):
     if excluded:
         notes.append("%d show(s) dropped: the live seat map could not seat "
                      "%d together." % (excluded, party))
+    tier_excluded = meta.get("excluded_by_tier") or 0
+    if tier_excluded:
+        notes.append("%d verified show(s) dropped: no %s tier in that "
+                     "hall." % (tier_excluded,
+                                query.get("tier") or "matching"))
+    price_excluded = meta.get("excluded_by_price") or 0
+    if price_excluded:
+        cap = query.get("max_price")
+        cap_text = ("%g" % cap) if isinstance(cap, (int, float)) else "the"
+        notes.append("%d verified show(s) dropped: over the Rs %s cap."
+                     % (price_excluded, cap_text))
+    # An Indiranagar run once spent its whole seat budget, dropped every
+    # verified show, and left a page of "unverified" with no explanation:
+    # when that happens, the page says so instead of looking broken.
+    shows = radar.get("shows") or []
+    if (shows and (excluded or tier_excluded or price_excluded)
+            and not any(s.get("seats") for s in shows)):
+        notes.append("Every seat map this run opened was dropped by the "
+                     "filters above, so each remaining show is honestly "
+                     "unverified. A higher seat-detail or a wider time "
+                     "window verifies more.")
     if not notes:
         return ""
     return '<p class="notice">%s</p>' % esc(" ".join(notes))
@@ -417,6 +505,11 @@ section, footer { padding: 12px 26px; }
             font-size: 11.5px; margin-right: 6px; color: #ffffff;
             font-variant-numeric: tabular-nums; }
 .table-wrap { padding-top: 6px; }
+.table-note { font-size: 12px; color: var(--sub); margin: 0 0 6px; }
+.table-wrap th[data-key] { cursor: pointer; user-select: none; }
+.table-wrap th[data-key]:hover { color: var(--ink); }
+.table-wrap th[aria-sort="ascending"]::after { content: " \\2191"; }
+.table-wrap th[aria-sort="descending"]::after { content: " \\2193"; }
 .table-wrap table { border-collapse: collapse; width: 100%%;
         background: var(--card); font-size: 13.5px;
         border: 1px solid var(--line); border-radius: 14px;
@@ -483,6 +576,67 @@ img { max-width: 100%%; }
 """ % INK
 
 SCRIPT = """
+// Table sorter first and standalone: a Leaflet failure later in this file
+// must never take the no-map fallback's sorting down with it.
+(function () {
+  var table = document.querySelector(".table-wrap table");
+  if (!table) { return; }
+  var ths = table.getElementsByTagName("th");
+  var current = { key: null, dir: 0, num: false };
+  function apply() {
+    var rows = [];
+    var all = table.getElementsByTagName("tr");
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].hasAttribute("data-i")) { rows.push(all[i]); }
+    }
+    if (!rows.length) { return; }
+    rows.sort(function (a, b) {
+      if (current.dir === 0) {
+        return a.getAttribute("data-i") - b.getAttribute("data-i");
+      }
+      var ka = a.getAttribute("data-" + current.key) || "";
+      var kb = b.getAttribute("data-" + current.key) || "";
+      if (current.num) {
+        ka = parseFloat(ka);
+        kb = parseFloat(kb);
+        // A missing value (unpriced, unrated, no timestamp) sorts last in
+        // BOTH directions instead of topping the descending order.
+        var missA = ka >= 999999 || (current.key === "rating" && ka < 0);
+        var missB = kb >= 999999 || (current.key === "rating" && kb < 0);
+        if (missA !== missB) { return missA ? 1 : -1; }
+      }
+      if (ka < kb) { return -current.dir; }
+      if (ka > kb) { return current.dir; }
+      return a.getAttribute("data-i") - b.getAttribute("data-i");
+    });
+    var parent = rows[0].parentNode;
+    for (var j = 0; j < rows.length; j++) { parent.appendChild(rows[j]); }
+  }
+  for (var i = 0; i < ths.length; i++) {
+    (function (th) {
+      var key = th.getAttribute("data-key");
+      if (!key) { return; }
+      th.addEventListener("click", function () {
+        if (current.key === key) {
+          current.dir = current.dir === 1 ? -1 :
+                        current.dir === -1 ? 0 : 1;
+        } else {
+          current.key = key;
+          current.dir = 1;
+        }
+        current.num = th.hasAttribute("data-num");
+        for (var k = 0; k < ths.length; k++) {
+          ths[k].removeAttribute("aria-sort");
+        }
+        if (current.dir === 1) { th.setAttribute("aria-sort", "ascending"); }
+        if (current.dir === -1) {
+          th.setAttribute("aria-sort", "descending");
+        }
+        apply();
+      });
+    })(ths[i]);
+  }
+})();
 (function () {
   if (typeof L === "undefined") { return; }  // CDN blocked: table has it all
   var q = RADAR.query || {};

@@ -128,12 +128,12 @@ class TestRatingsColumn(unittest.TestCase):
 
     def test_no_ratings_no_column(self):
         page = render_map.render(self.RADAR)
-        self.assertNotIn("<th>Rating</th>", page)
+        self.assertNotIn('data-key="rating"', page)
 
     def test_ratings_column_matches_case_insensitive(self):
         page = render_map.render(self.RADAR, ratings={
             "awarapan 2 (hindi)": {"rating": "7.2", "source": "IMDb"}})
-        self.assertIn("<th>Rating</th>", page)
+        self.assertIn('data-key="rating"', page)
         self.assertIn("7.2 (IMDb)", page)
 
     def test_plain_value_rating(self):
@@ -215,10 +215,10 @@ class TestPriceQueries(unittest.TestCase):
                                               premium=False, verified=True)}],
                      "meta": {}}
         page = render_map.render(radar_doc)
-        self.assertIn("<th>Price</th>", page)
+        self.assertIn('data-key="price"', page)
         self.assertIn("from Rs 199", page)
         radar_doc["shows"][0].pop("seats")
-        self.assertNotIn("<th>Price</th>", render_map.render(radar_doc))
+        self.assertNotIn('data-key="price"', render_map.render(radar_doc))
 
 
 class TestPriceCli(unittest.TestCase):

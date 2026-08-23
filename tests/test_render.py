@@ -82,8 +82,8 @@ class TestRenderedPage(unittest.TestCase):
 
     def test_fallback_table_in_static_markup(self):
         self.assertIn("<table>", self.page)
-        self.assertIn("<th>Venue</th>", self.page)
-        self.assertIn("<th>Seats</th>", self.page)
+        self.assertIn(">Venue</th>", self.page)
+        self.assertIn(">Seats</th>", self.page)
 
     def test_verified_and_unverified_chips_distinct(self):
         self.assertIn("chip-verified", self.page)
@@ -258,6 +258,93 @@ class TestSeatVerdictWording(unittest.TestCase):
         self.assertIn("good rows full · fits elsewhere", page)
         self.assertIn("other rows in the hall can", page)
         self.assertNotIn('"zone full"', page)
+
+
+class TestNoticeBannerExclusions(unittest.TestCase):
+    """Indiranagar, 23 Aug 2026: a recliner ask spent its whole seat budget,
+    every verified show was dropped (3 halls without the tier, 3 that could
+    not seat 3 together), and the page said nothing about the tier drops.
+    Every filter that can drop a verified show must announce itself, and an
+    all-dropped run must explain why everything left reads unverified."""
+
+    @staticmethod
+    def make(meta_extra, shows=(), query_extra=None):
+        radar = TestHonestEmptyStates.base_radar(
+            [TestHonestEmptyStates.venue("1", True)], list(shows),
+            meta_extra)
+        radar["query"].update(query_extra or {})
+        return radar
+
+    def test_tier_drops_are_announced(self):
+        banner = render_map.notice_banner(self.make(
+            {"excluded_by_tier": 3}, query_extra={"tier": "recliner"}))
+        self.assertIn("3 verified show(s) dropped", banner)
+        self.assertIn("recliner", banner)
+
+    def test_price_drops_are_announced(self):
+        banner = render_map.notice_banner(self.make(
+            {"excluded_by_price": 2}, query_extra={"max_price": 500}))
+        self.assertIn("2 verified show(s) dropped", banner)
+        self.assertIn("500", banner)
+
+    def test_all_verified_dropped_explains_the_unverified_page(self):
+        show = {"theatreId": "1", "sessionId": 5, "film": "DUNE",
+                "showTime": "06:00 PM", "showTimeStamp": 1,
+                "screenType": "", "movieFormat": "", "soundFormat": "",
+                "statusCode": "76BE43", "status_category": "available",
+                "statusTxt": "Available", "deep_link": None,
+                "time_unparsed": False, "seats": None, "seat_error": None,
+                "rank": 1}
+        banner = render_map.notice_banner(self.make(
+            {"excluded_by_tier": 3, "excluded_by_party": 3}, [show],
+            {"tier": "recliner"}))
+        self.assertIn("honestly", banner)
+        self.assertIn("unverified", banner)
+        self.assertIn("seat-detail", banner)
+
+    def test_verified_show_present_means_no_all_dropped_note(self):
+        show = {"theatreId": "1", "sessionId": 5, "film": "DUNE",
+                "showTime": "06:00 PM", "showTimeStamp": 1,
+                "screenType": "", "movieFormat": "", "soundFormat": "",
+                "statusCode": "76BE43", "status_category": "available",
+                "statusTxt": "Available", "deep_link": None,
+                "time_unparsed": False,
+                "seats": {"meets_party_size": True, "best_run": 4,
+                          "free": 10},
+                "seat_error": None, "rank": 1}
+        banner = render_map.notice_banner(self.make(
+            {"excluded_by_tier": 1}, [show], {"tier": "recliner"}))
+        self.assertNotIn("Every seat map", banner)
+
+
+class TestSortableTable(unittest.TestCase):
+    """The no-JS table stays in the radar's ranked order; with JS the
+    column headers re-sort it client-side, and the page names the default
+    order instead of leaving it a mystery."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.page = render_map.render(
+            context.load_fixture("radar_real_capture.json"))
+
+    def test_headers_carry_sort_keys(self):
+        for attr in ('data-key="venue"', 'data-key="km"', 'data-key="t"',
+                     'data-key="seats"', 'data-key="status"'):
+            self.assertIn(attr, self.page, attr)
+
+    def test_rows_carry_sort_values_and_original_order(self):
+        self.assertIn('data-i="0"', self.page)
+        self.assertIn("data-km=", self.page)
+        self.assertIn("data-t=", self.page)
+        self.assertIn("data-seats=", self.page)
+
+    def test_sorter_and_indicator_wired(self):
+        self.assertIn("aria-sort", self.page)
+        self.assertIn('table.getElementsByTagName("tr")', self.page)
+
+    def test_default_order_is_named(self):
+        self.assertIn("soonest show first, then nearest venue", self.page)
+        self.assertIn("third click restores this order", self.page)
 
 
 class TestLegendCoversEveryChipState(unittest.TestCase):

@@ -1,5 +1,7 @@
 # pvr-inox-radar
 
+[![tests](https://github.com/karanb192/pvr-inox-radar/actions/workflows/tests.yml/badge.svg)](https://github.com/karanb192/pvr-inox-radar/actions/workflows/tests.yml) [![release](https://img.shields.io/github/v/release/karanb192/pvr-inox-radar)](https://github.com/karanb192/pvr-inox-radar/releases) [![license](https://img.shields.io/github/license/karanb192/pvr-inox-radar)](LICENSE) [![python](https://img.shields.io/badge/python-3.9%2B%20stdlib%20only-blue)](#install)
+
 **Ask your coding agent "Dune, IMAX, Saturday night, 4 seats together, under 30 min from Sector 56 Gurgaon" and get one HTML map back: every PVR INOX venue as a pin, showtime chips colored by availability, exact seats-together counts for the shortlist, drive-time estimates, and every chip deep-linking into PVR's own seat page.**
 
 A Claude Code / Codex / Gemini skill. Read-only and personal-use: it never books anything. You pick a chip, land on pvrcinemas.com, and buy there. Scope: the merged PVR INOX chain only; other chains and BookMyShow listings are out of scope (see Roadmap).

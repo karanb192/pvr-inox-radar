@@ -14,9 +14,10 @@ import context  # noqa: E402
 import render_map  # noqa: E402
 
 ALLOWED_HOSTS = {
-    "unpkg.com",                     # Leaflet 1.9.4, SRI-pinned
-    "tile.openstreetmap.org",        # OSM basemap tiles (the only basemap:
-                                     # CARTO watermarks keyless requests)
+    "unpkg.com",                     # Leaflet + MapLibre GL, SRI-pinned
+    "tiles.openfreemap.org",         # Liberty vector basemap (keyless)
+    "tile.openstreetmap.org",        # raster OSM fallback when WebGL is off
+                                     # (CARTO watermarks keyless requests)
     "www.openstreetmap.org",         # attribution link
     "openstreetmap.org",
     "www.pvrcinemas.com",            # per-show deep links
@@ -28,6 +29,17 @@ class TestRenderedPage(unittest.TestCase):
     def setUpClass(cls):
         cls.radar = context.load_asset("sample_radar.json")
         cls.page = render_map.render(cls.radar)
+
+    def test_vector_basemap_with_raster_fallback(self):
+        """The Liberty vector style is the basemap, raster OSM stays in as
+        the no-WebGL fallback, and every unpkg asset tag carries SRI."""
+        self.assertIn("tiles.openfreemap.org/styles/liberty", self.page)
+        self.assertIn("tile.openstreetmap.org/{z}/{x}/{y}.png", self.page)
+        tags = re.findall(r"<(?:script|link)[^>]*unpkg\.com[^>]*>", self.page)
+        self.assertGreaterEqual(len(tags), 4)
+        for tag in tags:
+            self.assertIn('integrity="sha256-', tag)
+            self.assertIn('crossorigin="anonymous"', tag)
 
     def test_only_allowed_external_hosts(self):
         """R119/R68: Leaflet from unpkg, OSM tiles and attribution, and

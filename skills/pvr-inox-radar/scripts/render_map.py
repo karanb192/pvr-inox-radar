@@ -10,8 +10,8 @@ Usage:
     ... radar.py ... | python3 scripts/render_map.py --in - --out map.html
 
 The output embeds the radar JSON inline and performs zero fetches at view
-time except: Leaflet 1.9.4 from unpkg (SRI-pinned) and OpenStreetMap
-basemap tiles. A plain
+time except: Leaflet and MapLibre GL from unpkg (SRI-pinned), OpenFreeMap
+vector basemap tiles (raster OSM fallback without WebGL). A plain
 semantic HTML table under the map always carries the full answer, so the
 page still works with no JS, no CDN, or no tiles.
 """
@@ -30,9 +30,23 @@ LEAFLET_CSS_SRI = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
 LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 LEAFLET_JS_SRI = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 
+# Vector basemap stack, same recomputed-SRI discipline (2026-08-28):
+# MapLibre GL draws OpenFreeMap's keyless vector tiles (Liberty style) and
+# the leaflet binding hosts that GL canvas inside the existing Leaflet map,
+# so pins, labels, and popups stay plain Leaflet. When WebGL is unavailable
+# the page falls back to raster OSM tiles in the map script.
+MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+MAPLIBRE_CSS_SRI = "sha256-V2sIX92Uh6ZaGSFTKMHghsB85b9toJtmazgG09AI2uk="
+MAPLIBRE_JS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+MAPLIBRE_JS_SRI = "sha256-vpYzxNhw4m+zfxz+XFp3GBZnEUAD6hYgeseFDY2ordE="
+MAPLIBRE_LEAFLET_JS = ("https://unpkg.com/@maplibre/maplibre-gl-leaflet"
+                       "@0.0.22/leaflet-maplibre-gl.js")
+MAPLIBRE_LEAFLET_JS_SRI = "sha256-WezY0rMnedJPG9Jrh8iJDyfkpueFjZk70X5Nh45tJnc="
+
 FOOTER_CREDIT = (
     "Data: PVR INOX web API (unofficial, read-only). Client adapted from "
-    "pvr-inox-mcp (MIT). Map: Leaflet, (c) OpenStreetMap contributors. "
+    "pvr-inox-mcp (MIT). Map: Leaflet + MapLibre GL, tiles OpenFreeMap, "
+    "(c) OpenStreetMap contributors. "
     "Drive times are estimates. Book on pvrcinemas.com.")
 
 LEGEND_LINE = ("availability labels come from PVR and can lag; counted "
@@ -714,13 +728,28 @@ SCRIPT = """
   }
 
   var map = L.map("map", { scrollWheelZoom: false });
-  // OSM standard tiles: keyless. CARTO's anonymous basemaps serve
-  // "API KEY REQUIRED" watermark tiles since 2026-08-28, so no CARTO here.
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
-      + "OpenStreetMap</a> contributors"
-  }).addTo(map);
+  // Liberty vector basemap (OpenFreeMap, keyless) when WebGL is up; raster
+  // OSM otherwise. CARTO watermarks keyless raster tiles since 2026-08-28.
+  var glReady = false;
+  try {
+    var probe = document.createElement("canvas");
+    glReady = !!(window.maplibregl && L.maplibreGL
+      && (probe.getContext("webgl2") || probe.getContext("webgl")));
+  } catch (err) { glReady = false; }
+  if (glReady) {
+    L.maplibreGL({
+      style: "https://tiles.openfreemap.org/styles/liberty",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
+        + 'OpenStreetMap</a> contributors &copy; OpenMapTiles &middot; '
+        + 'OpenFreeMap'
+    }).addTo(map);
+  } else {
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
+        + "OpenStreetMap</a> contributors"
+    }).addTo(map);
+  }
 
   // Short on-map name: drop the city suffix and any "City: " prefix so the
   // label is readable at a glance; the popup keeps the full name.
@@ -866,6 +895,8 @@ def render(radar, ratings=None):
         "<title>PVR INOX Radar: %s</title>" % esc(asked),
         '<link rel="stylesheet" href="%s" integrity="%s" '
         'crossorigin="anonymous">' % (LEAFLET_CSS, LEAFLET_CSS_SRI),
+        '<link rel="stylesheet" href="%s" integrity="%s" '
+        'crossorigin="anonymous">' % (MAPLIBRE_CSS, MAPLIBRE_CSS_SRI),
         "<style>%s</style>" % CSS,
         "</head>",
         "<body>",
@@ -884,6 +915,10 @@ def render(radar, ratings=None):
         "<footer>%s</footer>" % esc(FOOTER_CREDIT),
         '<script src="%s" integrity="%s" crossorigin="anonymous"></script>'
         % (LEAFLET_JS, LEAFLET_JS_SRI),
+        '<script src="%s" integrity="%s" crossorigin="anonymous"></script>'
+        % (MAPLIBRE_JS, MAPLIBRE_JS_SRI),
+        '<script src="%s" integrity="%s" crossorigin="anonymous"></script>'
+        % (MAPLIBRE_LEAFLET_JS, MAPLIBRE_LEAFLET_JS_SRI),
         "<script>const RADAR = %s;</script>" % embedded,
         "<script>%s</script>" % SCRIPT,
         "</body>",

@@ -71,7 +71,7 @@ The data source is the JSON API behind the PVR INOX web app (unofficial, no logi
 1. One call lists the city's cinemas, plus one city-coordinates call and one now-showing (film variants) call on cold caches, cached thereafter; distance is computed locally from your origin, never trusted from the API.
 2. Up to 12 calls fetch each nearby venue's shows for the date (capability-first when you asked for a format like IMAX). A date that is not on sale yet answers differently from a sold-out one, and the tool keeps those separate everywhere.
 3. Seat maps are fetched for the top few shortlisted shows only (default 3, hard cap 8). From each map it counts the longest run of free adjacent seats in the good-seats zone of that hall, aisle-aware, so "4 together" is a counted fact, not a status label.
-4. `render_map.py` writes one self-contained map.html. External references are exactly: Leaflet from unpkg (SRI-pinned), OpenStreetMap basemap tiles, and the per-show PVR deep links.
+4. `render_map.py` writes one self-contained map.html. External references are exactly: Leaflet and MapLibre GL from unpkg (SRI-pinned), [OpenFreeMap](https://openfreemap.org) vector basemap tiles (with a plain OpenStreetMap raster fallback when WebGL is unavailable), and the per-show PVR deep links.
 
 Status labels get one honest caveat baked into every output: PVR's own availability text can lag in both directions, so labels are a first pass and counted seats beat them.
 
@@ -106,7 +106,7 @@ PVR_LIVE=1 python3 -m unittest tests.live_smoke
 
 - API client engineering adapted from [notprashanth/pvr-inox-mcp](https://github.com/notprashanth/pvr-inox-mcp) (MIT) by Prashanth Krishnan, including the withheld-rows seat insight; see LICENSE.
 - [anthropics/skills](https://github.com/anthropics/skills): the skill-structure conventions this follows.
-- Map rendering: [Leaflet](https://leafletjs.com), tiles (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Geocoding: [Nominatim](https://nominatim.org), used within its 1 request/second policy.
+- Map rendering: [Leaflet](https://leafletjs.com) + [MapLibre GL](https://maplibre.org); basemap [OpenFreeMap](https://openfreemap.org) ([OpenMapTiles](https://openmaptiles.org) schema), data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Geocoding: [Nominatim](https://nominatim.org), used within its 1 request/second policy.
 
 ## Roadmap
 

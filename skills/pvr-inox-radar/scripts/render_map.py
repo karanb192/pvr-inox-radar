@@ -10,8 +10,8 @@ Usage:
     ... radar.py ... | python3 scripts/render_map.py --in - --out map.html
 
 The output embeds the radar JSON inline and performs zero fetches at view
-time except: Leaflet 1.9.4 from unpkg (SRI-pinned) and basemap tiles
-(CARTO Positron, falling back to OpenStreetMap on tile error). A plain
+time except: Leaflet 1.9.4 from unpkg (SRI-pinned) and OpenStreetMap
+basemap tiles. A plain
 semantic HTML table under the map always carries the full answer, so the
 page still works with no JS, no CDN, or no tiles.
 """
@@ -714,29 +714,13 @@ SCRIPT = """
   }
 
   var map = L.map("map", { scrollWheelZoom: false });
-  // CARTO Positron: muted retina cartography that lets the pins carry the
-  // color. On any tile error, fall back once to standard OSM tiles.
-  function osmLayer() {
-    return L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
-        + "OpenStreetMap</a> contributors"
-    });
-  }
-  var base = L.tileLayer(
-    "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 20,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
-        + 'OpenStreetMap</a> contributors &copy; '
-        + '<a href="https://carto.com/attributions">CARTO</a>'
-    }).addTo(map);
-  var fellBack = false;
-  base.on("tileerror", function () {
-    if (fellBack) { return; }
-    fellBack = true;
-    map.removeLayer(base);
-    osmLayer().addTo(map);
-  });
+  // OSM standard tiles: keyless. CARTO's anonymous basemaps serve
+  // "API KEY REQUIRED" watermark tiles since 2026-08-28, so no CARTO here.
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">'
+      + "OpenStreetMap</a> contributors"
+  }).addTo(map);
 
   // Short on-map name: drop the city suffix and any "City: " prefix so the
   // label is readable at a glance; the popup keeps the full name.

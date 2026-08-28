@@ -71,7 +71,7 @@ The data source is the JSON API behind the PVR INOX web app (unofficial, no logi
 1. One call lists the city's cinemas, plus one city-coordinates call and one now-showing (film variants) call on cold caches, cached thereafter; distance is computed locally from your origin, never trusted from the API.
 2. Up to 12 calls fetch each nearby venue's shows for the date (capability-first when you asked for a format like IMAX). A date that is not on sale yet answers differently from a sold-out one, and the tool keeps those separate everywhere.
 3. Seat maps are fetched for the top few shortlisted shows only (default 3, hard cap 8). From each map it counts the longest run of free adjacent seats in the good-seats zone of that hall, aisle-aware, so "4 together" is a counted fact, not a status label.
-4. `render_map.py` writes one self-contained map.html. External references are exactly: Leaflet from unpkg (SRI-pinned), CARTO's Positron basemap (falling back to OpenStreetMap tiles on error), and the per-show PVR deep links.
+4. `render_map.py` writes one self-contained map.html. External references are exactly: Leaflet from unpkg (SRI-pinned), OpenStreetMap basemap tiles, and the per-show PVR deep links.
 
 Status labels get one honest caveat baked into every output: PVR's own availability text can lag in both directions, so labels are a first pass and counted seats beat them.
 

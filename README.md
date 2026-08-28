@@ -4,6 +4,10 @@
 
 **Ask your coding agent "Dune, IMAX, Saturday night, 4 seats together, under 30 min from Sector 56 Gurgaon" and get one HTML map back: every PVR INOX venue as a pin, showtime chips colored by availability, exact seats-together counts for the shortlist, drive-time estimates, and every chip deep-linking into PVR's own seat page.**
 
+![A real run: the ask typed into a coding agent, the radar sweep, a live map of every nearby PVR INOX with counted seats, ending on PVR's own seat page](docs/assets/readme-demo.gif)
+
+*A real run, 28 Aug 2026: one ask, a live map with counted seats-together, ending on PVR's own seat page.*
+
 A Claude Code / Codex / Gemini skill. Read-only and personal-use: it never books anything. You pick a chip, land on pvrcinemas.com, and buy there. Scope: the merged PVR INOX chain only; other chains and BookMyShow listings are out of scope (see Roadmap).
 
 ## Good queries

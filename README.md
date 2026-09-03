@@ -104,7 +104,7 @@ PVR_LIVE=1 python3 -m unittest tests.live_smoke
 
 ## Credits
 
-- API client engineering adapted from [notprashanth/pvr-inox-mcp](https://github.com/notprashanth/pvr-inox-mcp) (MIT) by Prashanth Krishnan, including the withheld-rows seat insight; see LICENSE.
+- API client engineering adapted from notprashanth/pvr-inox-mcp (MIT) by Prashanth Krishnan, including the withheld-rows seat insight; see LICENSE. The original GitHub repo has since been removed; a [listing survives at Glama](https://glama.ai/mcp/servers/notprashanth/pvr-inox-mcp).
 - [anthropics/skills](https://github.com/anthropics/skills): the skill-structure conventions this follows.
 - Map rendering: [Leaflet](https://leafletjs.com) + [MapLibre GL](https://maplibre.org); basemap [OpenFreeMap](https://openfreemap.org) ([OpenMapTiles](https://openmaptiles.org) schema), data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors. Geocoding: [Nominatim](https://nominatim.org), used within its 1 request/second policy.
 
@@ -115,4 +115,4 @@ PVR_LIVE=1 python3 -m unittest tests.live_smoke
 
 ## License
 
-MIT. Portions adapted from the MIT-licensed [pvr-inox-mcp](https://github.com/notprashanth/pvr-inox-mcp); see LICENSE for the full notice.
+MIT. Portions adapted from the MIT-licensed pvr-inox-mcp by Prashanth Krishnan (original repo since removed; [listing](https://glama.ai/mcp/servers/notprashanth/pvr-inox-mcp)); see LICENSE for the full notice.

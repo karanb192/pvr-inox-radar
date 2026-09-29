@@ -77,6 +77,11 @@ Status labels get one honest caveat baked into every output: PVR's own availabil
 
 Everything cross-process (pacing clock, block cooldown, city coordinates, hall geometry) persists in `~/.cache/pvr-inox-radar/`, so repeat questions cost fewer calls.
 
+The skill records its optional star invitation in the same cache's
+`state.json`, so it is not repeated across conversations. It can offer
+after delivering a map with a matching bookable show; starring through
+GitHub CLI requires an explicit yes. Clearing the cache resets the record.
+
 ## Politeness and personal use
 
 This tool is built to be a polite guest on someone else's infrastructure:

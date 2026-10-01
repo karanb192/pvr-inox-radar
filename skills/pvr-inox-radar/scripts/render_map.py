@@ -912,7 +912,8 @@ def render(radar, ratings=None):
         legend,
         '<section class="table-wrap">%s</section>'
         % fallback_table(radar, ratings),
-        "<footer>%s</footer>" % esc(FOOTER_CREDIT),
+        '<footer><a href="https://github.com/karanb192/pvr-inox-radar">'
+        'PVR INOX Radar source</a> · %s</footer>' % esc(FOOTER_CREDIT),
         '<script src="%s" integrity="%s" crossorigin="anonymous"></script>'
         % (LEAFLET_JS, LEAFLET_JS_SRI),
         '<script src="%s" integrity="%s" crossorigin="anonymous"></script>'

@@ -43,10 +43,12 @@ class TestRenderedPage(unittest.TestCase):
 
     def test_only_allowed_external_hosts(self):
         """R119/R68: Leaflet from unpkg, OSM tiles and attribution, and
-        PVR deep links are the ONLY external references."""
+        PVR deep links and the project source are the external references."""
         urls = set(re.findall(r"https?://[^\s\"'<>\\)]+", self.page))
         self.assertTrue(urls)
         for url in urls:
+            if url == "https://github.com/karanb192/pvr-inox-radar":
+                continue
             host = urllib.parse.urlparse(url).netloc
             self.assertIn(host, ALLOWED_HOSTS, url)
 
@@ -403,6 +405,8 @@ class TestRealCaptureRender(unittest.TestCase):
         self.assertNotIn("\u2014", self.page)
         self.assertNotIn("\u2013", self.page)
         for url in set(re.findall(r"https?://[^\s\"'<>\\)]+", self.page)):
+            if url == "https://github.com/karanb192/pvr-inox-radar":
+                continue
             host = urllib.parse.urlparse(url).netloc
             self.assertIn(host, ALLOWED_HOSTS, url)
 
